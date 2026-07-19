@@ -19,6 +19,7 @@ let quiz = null;
 let stats = null;
 let revealed = false;
 let graded = false;
+let myAnswerDraft = '';
 
 const $ = (sel) => document.querySelector(sel);
 const el = {
@@ -34,6 +35,7 @@ const el = {
   countFavorite: $('#countFavorite'),
 
   quizBreadcrumb: $('#quizBreadcrumb'),
+  studyModeToggle: $('#studyModeToggle'),
   shuffleToggle: $('#shuffleToggle'),
   finishRoundBtn: $('#finishRoundBtn'),
   quizProgressBar: $('#quizProgressBar'),
@@ -237,6 +239,7 @@ function startSession(ids, { scope, breadcrumb }) {
   el.quizBreadcrumb.textContent = `${breadcrumb} (${ids.length}문제)`;
   revealed = false;
   graded = false;
+  myAnswerDraft = '';
 }
 
 function updateProgress() {
@@ -262,6 +265,11 @@ function renderQuizCard() {
   const isFavorite = storage.isFavorite(q.id);
   const qs = storage.getQuestionStats(q.id);
   const accuracy = qs.attempts ? Math.round((qs.correct / qs.attempts) * 100) : null;
+  const studyMode = el.studyModeToggle.checked;
+  const effectiveRevealed = revealed || studyMode;
+
+  const isMatch = studyMode && myAnswerDraft.trim().length > 0
+    && myAnswerDraft.trim().replace(/\s+/g, '') === String(q.answer || '').trim().replace(/\s+/g, '');
 
   el.quizCardWrap.innerHTML = `
     <div class="qcard">
@@ -274,7 +282,14 @@ function renderQuizCard() {
       </div>
       <div class="qcard-question">${escapeHtml(q.question || '')}</div>
 
-      ${revealed ? `
+      ${studyMode ? `
+        <div class="qcard-input-wrap">
+          <div class="qcard-answer-label">내 답 적어보기</div>
+          <textarea id="myAnswerInput" class="qcard-input ${isMatch ? 'match' : ''}" rows="2" placeholder="정답을 보기 전에 먼저 답을 적어보세요">${escapeHtml(myAnswerDraft)}</textarea>
+        </div>
+      ` : ''}
+
+      ${effectiveRevealed ? `
         <div class="qcard-answer-wrap">
           <div class="qcard-answer-label">정답</div>
           <div class="qcard-answer-text">${escapeHtml(q.answer || '')}</div>
@@ -309,6 +324,16 @@ function renderQuizCard() {
     renderQuizCard();
   });
 
+  const myAnswerInput = $('#myAnswerInput');
+  if (myAnswerInput) {
+    myAnswerInput.addEventListener('input', (e) => {
+      myAnswerDraft = e.target.value;
+      const nowMatch = myAnswerDraft.trim().length > 0
+        && myAnswerDraft.trim().replace(/\s+/g, '') === String(q.answer || '').trim().replace(/\s+/g, '');
+      myAnswerInput.classList.toggle('match', nowMatch);
+    });
+  }
+
   const revealBtn = $('#revealBtn');
   if (revealBtn) revealBtn.addEventListener('click', () => { revealed = true; renderQuizCard(); });
 
@@ -319,10 +344,10 @@ function renderQuizCard() {
 }
 
 function goNext() {
-  if (quiz.hasNext()) { quiz.next(); revealed = false; graded = false; renderQuizCard(); }
+  if (quiz.hasNext()) { quiz.next(); revealed = false; graded = false; myAnswerDraft = ''; renderQuizCard(); }
 }
 function goPrev() {
-  if (quiz.hasPrev()) { quiz.prev(); revealed = false; graded = false; renderQuizCard(); }
+  if (quiz.hasPrev()) { quiz.prev(); revealed = false; graded = false; myAnswerDraft = ''; renderQuizCard(); }
 }
 
 function escapeHtml(str) {
@@ -428,6 +453,9 @@ el.darkToggleSettings.addEventListener('change', (e) => {
 
 el.prevBtn.addEventListener('click', goPrev);
 el.nextBtn.addEventListener('click', goNext);
+el.studyModeToggle.addEventListener('change', () => {
+  if (quiz) renderQuizCard();
+});
 el.shuffleToggle.addEventListener('change', () => {
   if (quiz && quiz.queue.length) {
     const currentId = quiz.current() ? quiz.current().id : null;
