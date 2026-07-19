@@ -16,8 +16,8 @@
   <header class="app-header">
     <button id="menuToggle" class="icon-btn only-mobile" aria-label="메뉴 열기">☰</button>
     <div class="brand">
-      <span class="brand-mark">§</span>
-      <span class="brand-name">빈출문제 카드</span>
+      <span class="brand-mark">🚀</span>
+      <span class="brand-name">공부하자~</span>
     </div>
     <div class="header-actions">
       <span id="syncStatus" class="sync-status" title="데이터 원본 상태">●</span>
@@ -29,10 +29,14 @@
     <!-- ===== 사이드바 ===== -->
     <nav id="sidebar" class="sidebar">
       <ul class="nav-list">
-        <li><button class="nav-item" data-nav="stats">📊 통계</button></li>
-        <li><button class="nav-item" data-nav="wrong">✕ 오답노트 <span id="countWrong" class="nav-count">0</span></button></li>
+        <li id="allLearningNavItem" class="subject-node root-node"></li>
+        <li><button class="nav-item" data-nav="stats">🎯 통계</button></li>
+        <li class="subject-node">
+          <button class="nav-item" data-nav="wrong">🐸 오답노트 <span id="countWrong" class="nav-count">0</span></button>
+          <ul id="wrongScopeTree" class="subsubject-list" style="display:none"></ul>
+        </li>
         <li><button class="nav-item" data-nav="bookmark">🔖 북마크 <span id="countBookmark" class="nav-count">0</span></button></li>
-        <li><button class="nav-item" data-nav="favorite">★ 즐겨찾기 <span id="countFavorite" class="nav-count">0</span></button></li>
+        <li><button class="nav-item" data-nav="favorite">⭐ 즐겨찾기 <span id="countFavorite" class="nav-count">0</span></button></li>
         <li><button class="nav-item" data-nav="settings">⚙ 설정</button></li>
       </ul>
       <div class="nav-divider"></div>

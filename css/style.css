@@ -1,3 +1,10 @@
+@font-face {
+  font-family: 'OngleipKimkonghae';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408@1.0/Ownglyph_kimkonghae.woff2') format('woff2');
+  font-weight: normal;
+  font-display: swap;
+}
+
 /* ===== 디자인 토큰 ===== */
 :root {
   --bg: #faf9f5;
@@ -17,8 +24,8 @@
   --gold: #a9791f;
   --shadow: 0 1px 2px rgba(30, 37, 48, 0.06), 0 8px 24px -12px rgba(30, 37, 48, 0.12);
   --radius: 10px;
-  --font-serif: 'Noto Serif KR', serif;
-  --font-sans: 'Noto Sans KR', sans-serif;
+  --font-serif: 'OngleipKimkonghae', 'Noto Serif KR', serif;
+  --font-sans: 'OngleipKimkonghae', 'Noto Sans KR', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
 }
 
@@ -114,9 +121,20 @@ button { font-family: inherit; }
   font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--ink-muted); padding: 0 10px 8px;
 }
-.subject-tree { list-style: none; margin: 0; padding: 0; }
-.subject-node > .nav-item { font-weight: 600; }
-.subsubject-list { list-style: none; margin: 0 0 6px; padding: 0 0 0 14px; }
+.subject-tree { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.subject-node { display: flex; flex-direction: column; }
+.subject-row { display: flex; align-items: center; gap: 4px; }
+.subject-toggle {
+  width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: none; cursor: pointer; color: var(--ink-muted); padding: 0;
+  font-size: 11px; flex-shrink: 0;
+}
+.subject-toggle:hover { color: var(--accent); }
+.subject-row > .nav-item { flex: 1; font-weight: 600; }
+.root-node .subject-row { justify-content: space-between; }
+.root-node .subject-toggle { margin-left: auto; order: 2; }
+.root-node .nav-item { order: 1; }
+.subsubject-list { list-style: none; margin: 0 0 6px; padding: 0 0 0 14px; display: none; }
 .subsubject-list .nav-item { font-size: 13.5px; font-weight: 400; padding: 7px 10px; }
 .sidebar-scrim { display: none; }
 

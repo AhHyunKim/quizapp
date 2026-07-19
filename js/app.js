@@ -30,9 +30,11 @@ const el = {
   darkToggleSettings: $('#darkToggleSettings'),
   syncStatus: $('#syncStatus'),
   subjectTree: $('#subjectTree'),
+  allLearningNavItem: $('#allLearningNavItem'),
   countWrong: $('#countWrong'),
   countBookmark: $('#countBookmark'),
   countFavorite: $('#countFavorite'),
+  wrongScopeTree: $('#wrongScopeTree'),
 
   quizBreadcrumb: $('#quizBreadcrumb'),
   studyModeToggle: $('#studyModeToggle'),
@@ -175,33 +177,79 @@ async function loadCSVFile(file) {
 // ---------------------------------------------------------------------------
 function renderSubjectTree() {
   el.subjectTree.innerHTML = '';
+  if (el.allLearningNavItem) el.allLearningNavItem.innerHTML = '';
 
-  const allLi = document.createElement('li');
-  const allBtn = document.createElement('button');
-  allBtn.className = 'nav-item';
-  allBtn.textContent = `전체 학습 (${questions.length})`;
-  allBtn.addEventListener('click', () => {
-    startSession(questions.map((q) => q.id), { scope: '__all__', breadcrumb: '전체' });
-    navigate('quiz');
-    renderQuizCard();
+  const rootLi = document.createElement('li');
+  rootLi.className = 'subject-node root-node';
+
+  const rootRow = document.createElement('div');
+  rootRow.className = 'subject-row';
+
+  const rootToggle = document.createElement('button');
+  rootToggle.className = 'subject-toggle';
+  rootToggle.type = 'button';
+  rootToggle.textContent = '▸';
+  rootToggle.setAttribute('aria-label', '과목 목록 열기');
+
+  const rootBtn = document.createElement('button');
+  rootBtn.className = 'nav-item';
+  rootBtn.textContent = `🐣 전체 학습 (${questions.length})`;
+
+  const rootSubList = document.createElement('ul');
+  rootSubList.className = 'subsubject-list';
+  rootSubList.style.display = 'none';
+
+  rootToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = rootSubList.style.display !== 'none';
+    rootSubList.style.display = isOpen ? 'none' : 'block';
+    rootToggle.textContent = isOpen ? '▸' : '▾';
   });
-  allLi.appendChild(allBtn);
-  el.subjectTree.appendChild(allLi);
+
+  rootBtn.addEventListener('click', () => {
+    beginLearning(questions.map((q) => q.id), { scope: '__all__', breadcrumb: '전체' });
+  });
+
+  rootRow.appendChild(rootToggle);
+  rootRow.appendChild(rootBtn);
+  rootLi.appendChild(rootRow);
+  rootLi.appendChild(rootSubList);
+  if (el.allLearningNavItem) {
+    el.allLearningNavItem.appendChild(rootLi);
+  } else {
+    el.subjectTree.appendChild(rootLi);
+  }
 
   menu.forEach((subjectNode) => {
     const li = document.createElement('li');
     li.className = 'subject-node';
 
+    const row = document.createElement('div');
+    row.className = 'subject-row';
+
+    const toggle = document.createElement('button');
+    toggle.className = 'subject-toggle';
+    toggle.type = 'button';
+    toggle.textContent = '▸';
+    toggle.setAttribute('aria-label', '소과목 목록 열기');
+
     const header = document.createElement('button');
     header.className = 'nav-item';
     header.textContent = `${subjectNode.name} (${subjectNode.count})`;
+
     const subList = document.createElement('ul');
     subList.className = 'subsubject-list';
     subList.style.display = 'none';
 
-    header.addEventListener('click', () => {
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
       const isOpen = subList.style.display !== 'none';
       subList.style.display = isOpen ? 'none' : 'block';
+      toggle.textContent = isOpen ? '▸' : '▾';
+    });
+
+    header.addEventListener('click', () => {
+      beginLearning(subjectNode.ids, { scope: subjectNode.name, breadcrumb: subjectNode.name });
     });
 
     subjectNode.children.forEach((subNode) => {
@@ -210,17 +258,86 @@ function renderSubjectTree() {
       subBtn.className = 'nav-item';
       subBtn.textContent = `${subNode.name} (${subNode.count})`;
       subBtn.addEventListener('click', () => {
-        startSession(subNode.ids, { scope: subjectNode.name, breadcrumb: `${subjectNode.name} › ${subNode.name}` });
-        navigate('quiz');
-        renderQuizCard();
+        beginLearning(subNode.ids, { scope: subjectNode.name, breadcrumb: `${subjectNode.name} › ${subNode.name}` });
       });
       subLi.appendChild(subBtn);
       subList.appendChild(subLi);
     });
 
-    li.appendChild(header);
+    row.appendChild(toggle);
+    row.appendChild(header);
+    li.appendChild(row);
     li.appendChild(subList);
-    el.subjectTree.appendChild(li);
+    rootSubList.appendChild(li);
+  });
+}
+
+function getWrongIds() {
+  return storage.getWrongList().filter((id) => byId.has(id));
+}
+
+function renderWrongScopeMenu() {
+  if (!el.wrongScopeTree) return;
+  el.wrongScopeTree.innerHTML = '';
+
+  const wrongIds = getWrongIds();
+  if (!wrongIds.length) {
+    const li = document.createElement('li');
+    const emptyBtn = document.createElement('button');
+    emptyBtn.className = 'nav-item';
+    emptyBtn.textContent = '오답 문제가 없습니다';
+    emptyBtn.disabled = true;
+    li.appendChild(emptyBtn);
+    el.wrongScopeTree.appendChild(li);
+    return;
+  }
+
+  const allLi = document.createElement('li');
+  const allBtn = document.createElement('button');
+  allBtn.className = 'nav-item';
+  allBtn.textContent = `전체 (${wrongIds.length})`;
+  allBtn.addEventListener('click', () => {
+    beginLearning(wrongIds, { scope: '__wrong__', breadcrumb: '오답노트' });
+  });
+  allLi.appendChild(allBtn);
+  el.wrongScopeTree.appendChild(allLi);
+
+  menu.forEach((subjectNode) => {
+    const subjectWrongIds = wrongIds.filter((id) => subjectNode.ids.includes(id));
+    if (!subjectWrongIds.length) return;
+
+    const subjectLi = document.createElement('li');
+    const subjectBtn = document.createElement('button');
+    subjectBtn.className = 'nav-item';
+    subjectBtn.textContent = `${subjectNode.name} (${subjectWrongIds.length})`;
+    subjectBtn.addEventListener('click', () => {
+      beginLearning(subjectWrongIds, { scope: subjectNode.name, breadcrumb: `오답노트 › ${subjectNode.name}` });
+    });
+    subjectLi.appendChild(subjectBtn);
+    el.wrongScopeTree.appendChild(subjectLi);
+
+    const subList = document.createElement('ul');
+    subList.className = 'subsubject-list';
+    subList.style.display = 'none';
+
+    subjectNode.children.forEach((subNode) => {
+      const subWrongIds = subjectWrongIds.filter((id) => subNode.ids.includes(id));
+      if (!subWrongIds.length) return;
+
+      const subLi = document.createElement('li');
+      const subBtn = document.createElement('button');
+      subBtn.className = 'nav-item';
+      subBtn.textContent = `${subNode.name} (${subWrongIds.length})`;
+      subBtn.addEventListener('click', () => {
+        beginLearning(subWrongIds, { scope: `${subjectNode.name} › ${subNode.name}`, breadcrumb: `오답노트 › ${subjectNode.name} › ${subNode.name}` });
+      });
+      subLi.appendChild(subBtn);
+      subList.appendChild(subLi);
+    });
+
+    if (subList.children.length) {
+      subjectLi.appendChild(subList);
+    }
   });
 }
 
@@ -228,6 +345,7 @@ function renderNavCounts() {
   el.countWrong.textContent = storage.getWrongList().length;
   el.countBookmark.textContent = storage.getBookmarks().length;
   el.countFavorite.textContent = storage.getFavorites().length;
+  renderWrongScopeMenu();
 }
 
 // ---------------------------------------------------------------------------
@@ -240,6 +358,12 @@ function startSession(ids, { scope, breadcrumb }) {
   revealed = false;
   graded = false;
   myAnswerDraft = '';
+}
+
+function beginLearning(ids, { scope, breadcrumb }) {
+  startSession(ids, { scope, breadcrumb });
+  navigate('quiz');
+  renderQuizCard();
 }
 
 function updateProgress() {
@@ -267,6 +391,7 @@ function renderQuizCard() {
   const accuracy = qs.attempts ? Math.round((qs.correct / qs.attempts) * 100) : null;
   const studyMode = el.studyModeToggle.checked;
   const effectiveRevealed = revealed || studyMode;
+  const showAnswerInput = !studyMode;
 
   const isMatch = studyMode && myAnswerDraft.trim().length > 0
     && myAnswerDraft.trim().replace(/\s+/g, '') === String(q.answer || '').trim().replace(/\s+/g, '');
@@ -276,13 +401,13 @@ function renderQuizCard() {
       <div class="qcard-eyebrow">
         <span class="qcard-path">${escapeHtml(q.subject || '')} › ${escapeHtml(q.subSubject || '')}${accuracy !== null ? ` · 누적 정답률 ${accuracy}%` : ''}</span>
         <span class="qcard-tools">
-          <button class="qcard-icon-btn bookmark ${isBookmarked ? 'on' : ''}" id="bookmarkBtn" title="북마크">🔖</button>
-          <button class="qcard-icon-btn favorite ${isFavorite ? 'on' : ''}" id="favoriteBtn" title="즐겨찾기">★</button>
+          <button class="qcard-icon-btn bookmark ${isBookmarked ? 'on' : ''}" id="bookmarkBtn" title="북마크">${isBookmarked ? '🏷️' : '🔖'}</button>
+          <button class="qcard-icon-btn favorite ${isFavorite ? 'on' : ''}" id="favoriteBtn" title="즐겨찾기">${isFavorite ? '🌟' : '⭐'}</button>
         </span>
       </div>
       <div class="qcard-question">${escapeHtml(q.question || '')}</div>
 
-      ${studyMode ? `
+      ${showAnswerInput ? `
         <div class="qcard-input-wrap">
           <div class="qcard-answer-label">내 답 적어보기</div>
           <textarea id="myAnswerInput" class="qcard-input ${isMatch ? 'match' : ''}" rows="2" placeholder="정답을 보기 전에 먼저 답을 적어보세요">${escapeHtml(myAnswerDraft)}</textarea>
@@ -301,7 +426,7 @@ function renderQuizCard() {
           </div>
         ` : `
           <div class="qcard-actions">
-            <span class="qcard-graded-tag ${qs.lastResult ? 'correct' : 'wrong'}">${qs.lastResult ? '✓ 맞음으로 기록됨' : '✕ 오답으로 기록됨'}</span>
+            <span class="qcard-graded-tag ${qs.lastResult ? 'correct' : 'wrong'}">${qs.lastResult ? '✓ 맞음으로 기록됨' : '🐸 오답으로 기록됨'}</span>
           </div>
         `}
       ` : `
@@ -418,14 +543,16 @@ document.querySelectorAll('.nav-item[data-nav]').forEach((btn) => {
   btn.addEventListener('click', () => {
     const view = btn.dataset.nav;
     if (view === 'wrong') {
-      startSession(storage.getWrongList(), { scope: '__wrong__', breadcrumb: '오답노트' });
-      navigate('quiz'); renderQuizCard();
+      if (el.wrongScopeTree) {
+        el.wrongScopeTree.style.display = 'block';
+      }
+      beginLearning(getWrongIds(), { scope: '__wrong__', breadcrumb: '오답노트' });
+      navigate('quiz');
+      renderQuizCard();
     } else if (view === 'bookmark') {
-      startSession(storage.getBookmarks(), { scope: '__bookmark__', breadcrumb: '북마크' });
-      navigate('quiz'); renderQuizCard();
+      beginLearning(storage.getBookmarks(), { scope: '__bookmark__', breadcrumb: '북마크' });
     } else if (view === 'favorite') {
-      startSession(storage.getFavorites(), { scope: '__favorite__', breadcrumb: '즐겨찾기' });
-      navigate('quiz'); renderQuizCard();
+      beginLearning(storage.getFavorites(), { scope: '__favorite__', breadcrumb: '즐겨찾기' });
     } else {
       navigate(view);
     }
