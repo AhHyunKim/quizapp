@@ -193,6 +193,16 @@ h1 { font-family: var(--font-serif); font-size: 26px; margin: 0 0 20px; letter-s
   margin: 6px 0 18px; white-space: pre-wrap;
 }
 
+.qcard-input-wrap { margin: 4px 0 18px; }
+.qcard-input {
+  width: 100%; resize: vertical; min-height: 52px;
+  font-family: var(--font-sans); font-size: 14.5px; line-height: 1.6; color: var(--ink);
+  background: var(--bg); border: 1px solid var(--border-strong); border-radius: 8px;
+  padding: 10px 12px; transition: border-color 0.15s ease, background 0.15s ease;
+}
+.qcard-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.qcard-input.match { border-color: var(--good); background: var(--good-tint); }
+
 .qcard-answer-wrap { border-top: 1px dashed var(--border-strong); padding-top: 16px; margin-top: 4px; }
 .qcard-answer-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; color: var(--accent); text-transform: uppercase; margin-bottom: 6px; }
 .qcard-answer-text { font-family: var(--font-serif); font-size: 16.5px; line-height: 1.7; color: var(--ink); white-space: pre-wrap; }
