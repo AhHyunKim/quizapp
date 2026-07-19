@@ -27,6 +27,7 @@
   --font-serif: 'OngleipKimkonghae', 'Noto Serif KR', serif;
   --font-sans: 'OngleipKimkonghae', 'Noto Sans KR', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
+  --font-math: 'Latin Modern Math', 'Cambria Math', 'STIX Two Math', 'Times New Roman', serif;
 }
 
 html[data-theme="dark"] {
@@ -209,6 +210,19 @@ h1 { font-family: var(--font-serif); font-size: 26px; margin: 0 0 20px; letter-s
 .qcard-question {
   font-family: var(--font-serif); font-size: 19px; line-height: 1.75; color: var(--ink);
   margin: 6px 0 18px; white-space: pre-wrap;
+}
+
+.qcard-question .katex,
+.qcard-question .katex-display,
+.qcard-answer-text .katex,
+.qcard-answer-text .katex-display {
+  font-family: var(--font-math);
+  color: inherit;
+}
+
+.qcard-question .katex-display,
+.qcard-answer-text .katex-display {
+  margin: 0.4em 0;
 }
 
 .qcard-input-wrap { margin: 4px 0 18px; }
