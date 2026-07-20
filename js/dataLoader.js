@@ -67,10 +67,14 @@ export default class DataLoader {
    */
   normalizeSheetUrl(url) {
     const trimmed = url.trim();
-    if (trimmed.includes('output=csv') || trimmed.includes('/pub')) return trimmed;
+    if (!trimmed) return trimmed;
 
-    const idMatch = trimmed.match(/\/d\/([a-zA-Z0-9-_]+)/);
-    if (!idMatch) return trimmed; // 이미 직접 CSV URL인 경우
+    if (trimmed.includes('output=csv') || trimmed.includes('/export?') || trimmed.includes('/export?format=csv')) {
+      return trimmed;
+    }
+
+    const idMatch = trimmed.match(/\/d\/(?:e\/)?([a-zA-Z0-9-_]+)/);
+    if (!idMatch) return trimmed;
 
     const sheetId = idMatch[1];
     const gidMatch = trimmed.match(/[?&#]gid=(\d+)/);

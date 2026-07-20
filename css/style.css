@@ -82,7 +82,13 @@ button { font-family: inherit; }
   font-weight: 700; font-size: 15px;
 }
 .brand-name { font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
-.header-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.header-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.mode-switch { display: flex; gap: 6px; margin-right: 8px; }
+.mode-btn {
+  border: 1px solid var(--border-strong); background: var(--surface-tint); color: var(--ink-muted);
+  border-radius: 999px; padding: 6px 10px; font-size: 12.5px; cursor: pointer;
+}
+.mode-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 .icon-btn {
   border: 1px solid transparent; background: none; cursor: pointer;
   font-size: 17px; padding: 6px 8px; border-radius: 8px; color: var(--ink);
@@ -245,6 +251,17 @@ h1 { font-family: var(--font-serif); font-size: 26px; margin: 0 0 20px; letter-s
   border: 1px dashed var(--border-strong); border-radius: 6px; padding: 3px 8px;
   transform: rotate(-2deg);
 }
+
+.option-list { display: flex; flex-direction: column; gap: 10px; margin: 4px 0 16px; }
+.option-btn {
+  width: 100%; text-align: left; border: 1px solid var(--border-strong); border-radius: 10px;
+  background: var(--surface); color: var(--ink); padding: 12px 14px; cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.option-btn:hover { background: var(--surface-tint); }
+.option-btn.selected { border-color: var(--accent); background: var(--accent-tint); }
+.option-btn.correct { border-color: var(--good); background: var(--good-tint); color: var(--good); }
+.option-btn.wrong { border-color: var(--bad); background: var(--bad-tint); color: var(--bad); }
 
 .qcard-actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
 .grade-actions { display: flex; gap: 10px; margin-top: 16px; }

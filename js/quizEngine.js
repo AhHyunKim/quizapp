@@ -42,19 +42,19 @@ export default class QuizEngine {
 
   progress() { return { index: this.index + 1, total: this.queue.length }; }
 
-  submitResult(correct) {
+  submitResult(correct, mode = 'default') {
     const q = this.current();
     if (!q) return null;
-    const stats = this.storage.recordAnswer(q.id, q.subject, correct);
+    const stats = this.storage.recordAnswer(q.id, q.subject, correct, mode);
     this.sessionTotal += 1;
     if (correct) this.sessionCorrect += 1;
-    this.storage.setLastPosition({ scope: this.scope, id: q.id, index: this.index });
+    this.storage.setLastPosition({ scope: this.scope, id: q.id, index: this.index }, mode);
     return stats;
   }
 
-  finishRound() {
+  finishRound(mode = 'default') {
     if (this.sessionTotal === 0) return null;
-    this.storage.saveRoundScore(this.scope, this.sessionCorrect, this.sessionTotal);
+    this.storage.saveRoundScore(this.scope, this.sessionCorrect, this.sessionTotal, mode);
     const result = { correct: this.sessionCorrect, total: this.sessionTotal };
     this.sessionCorrect = 0;
     this.sessionTotal = 0;

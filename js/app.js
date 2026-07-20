@@ -20,6 +20,8 @@ let stats = null;
 let revealed = false;
 let graded = false;
 let myAnswerDraft = '';
+let currentMode = 'basic';
+let currentModeLabel = '빈출문제';
 
 const $ = (sel) => document.querySelector(sel);
 const el = {
@@ -54,12 +56,17 @@ const el = {
   sheetUrlInput: $('#sheetUrlInput'),
   sheetUrlSave: $('#sheetUrlSave'),
   sheetUrlStatus: $('#sheetUrlStatus'),
+  examSheetUrlInput: $('#examSheetUrlInput'),
+  examSheetUrlSave: $('#examSheetUrlSave'),
+  examSheetUrlStatus: $('#examSheetUrlStatus'),
   csvFileInput: $('#csvFileInput'),
   csvFileLoadSample: $('#csvFileLoadSample'),
   resetDataBtn: $('#resetDataBtn'),
 
   emptyGoSettings: $('#emptyGoSettings'),
   emptyLoadSample: $('#emptyLoadSample'),
+  modeBasicBtn: $('#modeBasicBtn'),
+  modeExamBtn: $('#modeExamBtn'),
 
   toast: $('#toast'),
 };
@@ -107,19 +114,85 @@ function navigate(view) {
 // ---------------------------------------------------------------------------
 // 데이터 로딩
 // ---------------------------------------------------------------------------
-async function applyLoadedQuestions(list, sourceLabel) {
-  questions = list;
+function parseOptionList(value) {
+  if (value === undefined || value === null || value === '') return [];
+  const text = String(value).trim();
+  if (!text) return [];
+  const splitters = /\r?\n|\s*\|\s*|\s*；\s*|\s*;\s*|\s*\/\s*|\s*／\s*/;
+  const parts = text.split(splitters).map((part) => part.trim()).filter(Boolean);
+  return parts.length > 1 ? parts : [text];
+}
+
+function normalizeQuestions(list) {
+  return list.map((q) => {
+    const next = { ...q };
+    const raw = next.raw || {};
+    const optionEntries = [];
+
+    const registerOption = (key, value) => {
+      if (value === undefined || value === null || value === '') return;
+      const text = String(value).trim();
+      if (!text) return;
+      const match = String(key).match(/^(?:((?:보기|선택지|option|choice)(\d+)?)|(\d+))$/i);
+      if (match) {
+        const index = match[2] ? Number(match[2]) : Number(match[3] || 0);
+        if (index > 0) optionEntries.push([index, text]);
+      }
+    };
+
+    Object.entries(next).forEach(([key, value]) => {
+      if (key === 'options' || key === 'raw') return;
+      registerOption(key, value);
+    });
+    Object.entries(raw).forEach(([key, value]) => {
+      registerOption(key, value);
+    });
+
+    if (Array.isArray(next.options) && next.options.length) {
+      next.options = next.options.filter((opt) => opt !== undefined && opt !== null).map((opt) => String(opt));
+    } else if (typeof next.options === 'string' && next.options.trim()) {
+      next.options = parseOptionList(next.options);
+    } else if (optionEntries.length) {
+      next.options = optionEntries.sort((a, b) => a[0] - b[0]).map(([, value]) => value);
+    } else {
+      const fallbackKeys = ['options', 'choices', 'selects', 'optionList'];
+      fallbackKeys.forEach((key) => {
+        if (raw[key] !== undefined) {
+          next.options = parseOptionList(raw[key]);
+        }
+      });
+    }
+
+    if (next.answer !== undefined && next.answer !== null && next.answer !== '') {
+      const answerText = String(next.answer).trim();
+      const numeric = Number(answerText.replace(/[^0-9]/g, ''));
+      if (!Number.isNaN(numeric) && numeric > 0) {
+        next.answer = numeric;
+      } else {
+        const alias = { a: 1, b: 2, c: 3, d: 4, e: 5, '①': 1, '②': 2, '③': 3, '④': 4, '⑤': 5 };
+        next.answer = alias[answerText.toLowerCase()] || next.answer;
+      }
+    }
+
+    return next;
+  });
+}
+
+async function applyLoadedQuestions(list, sourceLabel, mode = currentMode) {
+  const normalized = normalizeQuestions(list);
+  questions = normalized;
   byId = new Map(questions.map((q) => [q.id, q]));
   menu = menuBuilder.build(questions);
   quiz = new QuizEngine(byId, storage);
-  stats = new StatsManager(storage, byId);
+  stats = new StatsManager(storage, byId, mode);
 
   renderSubjectTree();
   renderNavCounts();
   setSyncStatus('ok');
   toast(`${sourceLabel} · 문제 ${questions.length}개 로딩 완료`, 'ok');
+  window.__debug_app_state = { mode, questionCount: questions.length, currentMode, questions };
 
-  const last = storage.getLastPosition();
+  const last = storage.getLastPosition(mode);
   if (last && byId.has(last.id)) {
     startSession(questions.map((q) => q.id), { scope: '__all__', breadcrumb: '전체' });
     const idx = quiz.queue.indexOf(last.id);
@@ -134,13 +207,16 @@ async function applyLoadedQuestions(list, sourceLabel) {
 }
 
 async function loadFromSheet(url) {
+  currentMode = 'basic';
+  el.modeBasicBtn.classList.add('active');
+  el.modeExamBtn.classList.remove('active');
   el.sheetUrlStatus.textContent = '불러오는 중…';
   el.sheetUrlStatus.className = 'settings-status';
   try {
     const list = await dataLoader.loadFromGoogleSheets(url);
     if (list.length === 0) throw new Error('시트에서 문제를 찾지 못했습니다. 헤더(ID/과목/소과목/문제/정답)를 확인해 주세요.');
-    storage.setSettings({ sheetUrl: url });
-    await applyLoadedQuestions(list, 'Google Sheets');
+    storage.setSettings({ sheetUrl: url }, 'basic');
+    await applyLoadedQuestions(list, 'Google Sheets', 'basic');
     el.sheetUrlStatus.textContent = `연결 완료 · 문제 ${list.length}개`;
     el.sheetUrlStatus.className = 'settings-status ok';
   } catch (err) {
@@ -152,20 +228,144 @@ async function loadFromSheet(url) {
   }
 }
 
+function convertExamRow(row) {
+  const raw = row.raw || row;
+  const optionEntries = [];
+  Object.entries(raw).forEach(([key, value]) => {
+    const match = String(key).match(/^(?:((?:보기|선택지|option|choice)(\d+)?)|(\d+))$/i);
+    if (match && value !== undefined && value !== null && value !== '') {
+      const index = match[2] ? Number(match[2]) : Number(match[3] || 0);
+      if (index > 0) optionEntries.push([index, String(value)]);
+    }
+  });
+
+  const answerValue = row.answer ?? row.답 ?? row.정답 ?? row.정답번호 ?? row.correct ?? row.correctAnswer ?? 0;
+  const answerText = String(answerValue ?? '').trim();
+  const numeric = Number(answerText.replace(/[^0-9]/g, ''));
+  const normalizedAnswer = !Number.isNaN(numeric) && numeric > 0
+    ? numeric
+    : (({ a: 1, b: 2, c: 3, d: 4, e: 5, '①': 1, '②': 2, '③': 3, '④': 4, '⑤': 5 })[answerText.toLowerCase()] || 0);
+
+  let options = [];
+  if (Array.isArray(row.options) && row.options.length) {
+    options = row.options.filter((v) => v !== undefined && v !== null && v !== '').map((v) => String(v));
+  } else if (typeof row.options === 'string' && row.options.trim()) {
+    options = parseOptionList(row.options);
+  } else if (optionEntries.length) {
+    options = optionEntries.sort((a, b) => a[0] - b[0]).map(([, value]) => value);
+  } else {
+    Object.entries(raw).forEach(([key, value]) => {
+      if (['options', 'choices', 'selects', 'optionlist'].includes(String(key).toLowerCase()) && value) {
+        options = parseOptionList(value);
+      }
+    });
+  }
+
+  const normalizedOptions = options
+    .filter((v) => v !== undefined && v !== null && v !== '')
+    .map((v) => String(v).trim())
+    .slice(0, 4);
+
+  return {
+    id: row.id || row.ID || '',
+    subject: row.subject || row.과목 || '',
+    subSubject: row.subSubject || row.소과목 || '',
+    question: row.question || row.문제 || '',
+    options: normalizedOptions,
+    answer: normalizedAnswer,
+    explanation: row.explanation || row.해설 || '',
+  };
+}
+
+async function loadExamFromSheet(url) {
+  currentMode = 'exam';
+  el.modeExamBtn.classList.add('active');
+  el.modeBasicBtn.classList.remove('active');
+  el.examSheetUrlStatus.textContent = '불러오는 중…';
+  el.examSheetUrlStatus.className = 'settings-status';
+  try {
+    const list = await (url.includes('data/exam-sample.csv') ? dataLoader.loadFromCSVUrl(url) : dataLoader.loadFromGoogleSheets(url));
+    if (list.length === 0) throw new Error('기출문제 시트에서 문제를 찾지 못했습니다.');
+    const converted = list.map(convertExamRow).filter((q) => q.id && q.question);
+    storage.setSettings({ examSheetUrl: url }, 'exam');
+    await applyLoadedQuestions(converted, '기출문제 Google Sheets', 'exam');
+    el.examSheetUrlStatus.textContent = `연결 완료 · 문제 ${converted.length}개`;
+    el.examSheetUrlStatus.className = 'settings-status ok';
+  } catch (err) {
+    console.error(err);
+    setSyncStatus('err');
+    el.examSheetUrlStatus.textContent = err.message || '기출문제 연결에 실패했습니다.';
+    el.examSheetUrlStatus.className = 'settings-status err';
+    toast('기출문제 연결 실패', 'err');
+  }
+}
+
 async function loadSample() {
   try {
     const list = await dataLoader.loadFromCSVUrl('data/sample.csv');
-    await applyLoadedQuestions(list, '샘플 데이터');
+    await applyLoadedQuestions(list, '샘플 데이터', currentMode);
   } catch (err) {
     console.error(err);
     toast('샘플 데이터를 불러오지 못했습니다 (로컬 서버로 실행 중인지 확인해 주세요).', 'err');
   }
 }
 
+async function loadExamSample() {
+  currentMode = 'exam';
+  currentModeLabel = '기출문제';
+  el.modeExamBtn.classList.add('active');
+  el.modeBasicBtn.classList.remove('active');
+  try {
+    const list = await dataLoader.loadFromCSVUrl('data/exam-sample.csv');
+    const converted = list.map((row) => {
+      const raw = row.raw || row;
+      const optionEntries = [];
+      Object.entries(raw).forEach(([key, value]) => {
+        const match = key.match(/^(보기|선택지|option|choice)(\d+)?$/i);
+        if (match && value !== undefined && value !== null && value !== '') {
+          optionEntries.push([Number(match[2] || 1), String(value)]);
+        }
+      });
+      const answerValue = row.answer ?? row.정답 ?? row.정답번호 ?? row.correct ?? row.correctAnswer ?? 0;
+      const answerText = String(answerValue ?? '').trim();
+      const numeric = Number(answerText.replace(/[^0-9]/g, ''));
+      const normalizedAnswer = !Number.isNaN(numeric) && numeric > 0 ? numeric : (({ a: 1, b: 2, c: 3, d: 4, e: 5, '①': 1, '②': 2, '③': 3, '④': 4, '⑤': 5 })[answerText.toLowerCase()] || 0);
+      let options = [];
+      if (Array.isArray(row.options) && row.options.length) {
+        options = row.options.filter((v) => v !== undefined && v !== null && v !== '').map((v) => String(v));
+      } else if (typeof row.options === 'string' && row.options.trim()) {
+        options = parseOptionList(row.options);
+      } else if (optionEntries.length) {
+        options = optionEntries.sort((a, b) => a[0] - b[0]).map(([, value]) => value);
+      } else {
+        Object.entries(raw).forEach(([key, value]) => {
+          if (['options', 'choices', 'selects', 'optionlist'].includes(String(key).toLowerCase()) && value) {
+            options = parseOptionList(value);
+          }
+        });
+      }
+      const normalizedOptions = options.filter((v) => v !== undefined && v !== null && v !== '').map((v) => String(v).trim()).slice(0, 4);
+      return {
+        id: row.id || row.ID || '',
+        subject: row.subject || row.과목 || '',
+        subSubject: row.subSubject || row.소과목 || '',
+        question: row.question || row.문제 || '',
+        options: normalizedOptions,
+        answer: normalizedAnswer,
+        explanation: row.explanation || row.해설 || '',
+      };
+    }).filter((q) => q.id && q.question);
+    await applyLoadedQuestions(converted, '기출문제 샘플 데이터', 'exam');
+  } catch (err) {
+    console.error(err);
+    toast('기출문제 샘플 데이터를 불러오지 못했습니다.', 'err');
+  }
+}
+
 async function loadCSVFile(file) {
   try {
     const list = await dataLoader.loadFromCSVFile(file);
-    await applyLoadedQuestions(list, file.name);
+    await applyLoadedQuestions(list, file.name, currentMode);
   } catch (err) {
     console.error(err);
     toast('CSV 파일을 읽지 못했습니다.', 'err');
@@ -273,7 +473,7 @@ function renderSubjectTree() {
 }
 
 function getWrongIds() {
-  return storage.getWrongList().filter((id) => byId.has(id));
+  return storage.getWrongList(currentMode).filter((id) => byId.has(id));
 }
 
 function renderWrongScopeMenu() {
@@ -342,9 +542,9 @@ function renderWrongScopeMenu() {
 }
 
 function renderNavCounts() {
-  el.countWrong.textContent = storage.getWrongList().length;
-  el.countBookmark.textContent = storage.getBookmarks().length;
-  el.countFavorite.textContent = storage.getFavorites().length;
+  el.countWrong.textContent = storage.getWrongList(currentMode).length;
+  el.countBookmark.textContent = storage.getBookmarks(currentMode).length;
+  el.countFavorite.textContent = storage.getFavorites(currentMode).length;
   renderWrongScopeMenu();
 }
 
@@ -375,24 +575,10 @@ function updateProgress() {
   el.nextBtn.disabled = !quiz.hasNext();
 }
 
-function renderQuizCard() {
-  if (!quiz) return;
-  updateProgress();
-  const q = quiz.current();
-
-  if (!q) {
-    el.quizCardWrap.innerHTML = `<div class="qcard qcard-empty">이 목록에는 표시할 문제가 없습니다.<br/>다른 메뉴를 선택해 보세요.</div>`;
-    return;
-  }
-
-  const isBookmarked = storage.isBookmarked(q.id);
-  const isFavorite = storage.isFavorite(q.id);
-  const qs = storage.getQuestionStats(q.id);
-  const accuracy = qs.attempts ? Math.round((qs.correct / qs.attempts) * 100) : null;
+function renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
   const studyMode = el.studyModeToggle.checked;
   const effectiveRevealed = revealed || studyMode;
   const showAnswerInput = !studyMode;
-
   const isMatch = studyMode && myAnswerDraft.trim().length > 0
     && myAnswerDraft.trim().replace(/\s+/g, '') === String(q.answer || '').trim().replace(/\s+/g, '');
 
@@ -439,12 +625,12 @@ function renderQuizCard() {
   `;
 
   $('#bookmarkBtn').addEventListener('click', () => {
-    storage.toggleBookmark(q.id);
+    storage.toggleBookmark(q.id, currentMode);
     renderNavCounts();
     renderQuizCard();
   });
   $('#favoriteBtn').addEventListener('click', () => {
-    storage.toggleFavorite(q.id);
+    storage.toggleFavorite(q.id, currentMode);
     renderNavCounts();
     renderQuizCard();
   });
@@ -464,8 +650,127 @@ function renderQuizCard() {
 
   const gradeCorrect = $('#gradeCorrect');
   const gradeWrong = $('#gradeWrong');
-  if (gradeCorrect) gradeCorrect.addEventListener('click', () => { quiz.submitResult(true); graded = true; renderNavCounts(); renderQuizCard(); });
-  if (gradeWrong) gradeWrong.addEventListener('click', () => { quiz.submitResult(false); graded = true; renderNavCounts(); renderQuizCard(); });
+  if (gradeCorrect) gradeCorrect.addEventListener('click', () => {
+    quiz.submitResult(true, currentMode);
+    graded = true;
+    renderNavCounts();
+    goNext();
+  });
+  if (gradeWrong) gradeWrong.addEventListener('click', () => {
+    quiz.submitResult(false, currentMode);
+    graded = true;
+    renderNavCounts();
+    goNext();
+  });
+}
+
+function renderMultipleChoiceQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
+  const options = Array.isArray(q.options)
+    ? q.options.filter((opt) => opt !== undefined && opt !== null && opt !== '').map((opt) => String(opt).trim())
+    : [];
+  const visibleOptions = options.slice(0, 4);
+  const selectedIndex = Number(q.selectedIndex ?? -1);
+  const answerIndex = Number(q.answer || 0);
+  const showResult = graded || revealed;
+  const hasOptions = visibleOptions.length >= 4;
+  window.__debug_render_variant = { hasOptions, optionCount: options.length, visibleOptions, answerIndex, selectedIndex, qOptions: q.options };
+
+  el.quizCardWrap.innerHTML = `
+    <div class="qcard">
+      <div class="qcard-eyebrow">
+        <span class="qcard-path">${escapeHtml(q.subject || '')} › ${escapeHtml(q.subSubject || '')}${accuracy !== null ? ` · 누적 정답률 ${accuracy}%` : ''}</span>
+        <span class="qcard-tools">
+          <button class="qcard-icon-btn bookmark ${isBookmarked ? 'on' : ''}" id="bookmarkBtn" title="북마크">${isBookmarked ? '🏷️' : '🔖'}</button>
+          <button class="qcard-icon-btn favorite ${isFavorite ? 'on' : ''}" id="favoriteBtn" title="즐겨찾기">${isFavorite ? '🌟' : '⭐'}</button>
+        </span>
+      </div>
+      <div class="qcard-question">${escapeHtml(q.question || '')}</div>
+
+      ${hasOptions ? `
+        <div class="option-list">
+          ${visibleOptions.map((opt, idx) => {
+            const optionNumber = idx + 1;
+            const isSelected = selectedIndex === optionNumber;
+            const isCorrect = showResult && optionNumber === answerIndex;
+            const isWrongSelected = showResult && isSelected && optionNumber !== answerIndex;
+            const className = ['option-btn', isSelected ? 'selected' : '', isCorrect ? 'correct' : '', isWrongSelected ? 'wrong' : ''].filter(Boolean).join(' ');
+            return `<button class="${className}" data-option="${optionNumber}" type="button">${escapeHtml(opt)}</button>`;
+          }).join('')}
+        </div>
+      ` : ''}
+
+      ${showResult ? `
+        <div class="qcard-answer-wrap">
+          <div class="qcard-answer-label">해설</div>
+          <div class="qcard-answer-text">${escapeHtml(q.explanation || '')}</div>
+        </div>
+      ` : ''}
+
+      ${!showResult ? `
+        <div class="qcard-actions">
+          <button class="btn btn-primary" id="confirmBtn">정답 확인</button>
+        </div>
+      ` : ''}
+      <div class="qcard-id-stamp">${escapeHtml(q.id)}</div>
+    </div>
+  `;
+
+  $('#bookmarkBtn').addEventListener('click', () => {
+    storage.toggleBookmark(q.id, currentMode);
+    renderNavCounts();
+    renderQuizCard();
+  });
+  $('#favoriteBtn').addEventListener('click', () => {
+    storage.toggleFavorite(q.id, currentMode);
+    renderNavCounts();
+    renderQuizCard();
+  });
+
+  document.querySelectorAll('.option-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (showResult) return;
+      q.selectedIndex = Number(btn.dataset.option || 0);
+      renderQuizCard();
+    });
+  });
+
+  const confirmBtn = $('#confirmBtn');
+  if (confirmBtn) {
+    confirmBtn.addEventListener('click', () => {
+      const selected = Number(q.selectedIndex || 0);
+      const answer = Number(q.answer || 0);
+      const correct = selected === answer;
+      quiz.submitResult(correct, currentMode);
+      revealed = true;
+      graded = true;
+      renderNavCounts();
+      renderQuizCard();
+    });
+  }
+}
+
+function renderQuizCard() {
+  if (!quiz) return;
+  updateProgress();
+  const q = quiz.current();
+
+  if (!q) {
+    el.quizCardWrap.innerHTML = `<div class="qcard qcard-empty">이 목록에는 표시할 문제가 없습니다.<br/>다른 메뉴를 선택해 보세요.</div>`;
+    return;
+  }
+
+  const isBookmarked = storage.isBookmarked(q.id, currentMode);
+  const isFavorite = storage.isFavorite(q.id, currentMode);
+  const qs = storage.getQuestionStats(q.id, currentMode);
+  const accuracy = qs.attempts ? Math.round((qs.correct / qs.attempts) * 100) : null;
+  const hasMultipleChoiceOptions = Array.isArray(q.options) && q.options.filter((opt) => opt !== undefined && opt !== null && opt !== '').length >= 4;
+  const isExamMode = currentMode === 'exam' && hasMultipleChoiceOptions;
+
+  if (isExamMode) {
+    renderMultipleChoiceQuiz(q, qs, accuracy, isBookmarked, isFavorite);
+  } else {
+    renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite);
+  }
 }
 
 function goNext() {
@@ -550,9 +855,9 @@ document.querySelectorAll('.nav-item[data-nav]').forEach((btn) => {
       navigate('quiz');
       renderQuizCard();
     } else if (view === 'bookmark') {
-      beginLearning(storage.getBookmarks(), { scope: '__bookmark__', breadcrumb: '북마크' });
+      beginLearning(storage.getBookmarks(currentMode), { scope: '__bookmark__', breadcrumb: '북마크' });
     } else if (view === 'favorite') {
-      beginLearning(storage.getFavorites(), { scope: '__favorite__', breadcrumb: '즐겨찾기' });
+      beginLearning(storage.getFavorites(currentMode), { scope: '__favorite__', breadcrumb: '즐겨찾기' });
     } else {
       navigate(view);
     }
@@ -570,16 +875,42 @@ el.sidebarScrim.addEventListener('click', () => {
 
 el.darkToggle.addEventListener('click', () => {
   const next = document.documentElement.dataset.theme !== 'dark';
-  storage.setSettings({ darkMode: next });
+  storage.setSettings({ darkMode: next }, currentMode === 'exam' ? 'exam' : 'basic');
+  storage.setSettings({ darkMode: next }, 'exam');
   applyTheme(next);
 });
 el.darkToggleSettings.addEventListener('change', (e) => {
-  storage.setSettings({ darkMode: e.target.checked });
+  storage.setSettings({ darkMode: e.target.checked }, currentMode === 'exam' ? 'exam' : 'basic');
+  storage.setSettings({ darkMode: e.target.checked }, 'exam');
   applyTheme(e.target.checked);
 });
 
 el.prevBtn.addEventListener('click', goPrev);
 el.nextBtn.addEventListener('click', goNext);
+el.modeBasicBtn.addEventListener('click', async () => {
+  currentMode = 'basic';
+  currentModeLabel = '빈출문제';
+  el.modeBasicBtn.classList.add('active');
+  el.modeExamBtn.classList.remove('active');
+  const settings = storage.getSettings('basic');
+  if (settings.sheetUrl) {
+    await loadFromSheet(settings.sheetUrl);
+  } else {
+    await loadSample();
+  }
+});
+el.modeExamBtn.addEventListener('click', async () => {
+  currentMode = 'exam';
+  currentModeLabel = '기출문제';
+  el.modeExamBtn.classList.add('active');
+  el.modeBasicBtn.classList.remove('active');
+  const settings = storage.getSettings('exam');
+  if (settings.examSheetUrl) {
+    await loadExamFromSheet(settings.examSheetUrl);
+  } else {
+    await loadExamSample();
+  }
+});
 el.studyModeToggle.addEventListener('change', () => {
   if (quiz) renderQuizCard();
 });
@@ -596,7 +927,7 @@ el.shuffleToggle.addEventListener('change', () => {
   }
 });
 el.finishRoundBtn.addEventListener('click', () => {
-  const result = quiz ? quiz.finishRound() : null;
+  const result = quiz ? quiz.finishRound(currentMode) : null;
   if (!result) { toast('이번 회독에서 풀이한 문제가 없습니다.'); return; }
   toast(`회독 마감 · ${result.correct} / ${result.total} 정답`, 'ok');
   renderStats();
@@ -608,6 +939,11 @@ el.sheetUrlSave.addEventListener('click', () => {
   const url = el.sheetUrlInput.value.trim();
   if (!url) { toast('Google Sheets 링크를 입력해 주세요.', 'err'); return; }
   loadFromSheet(url);
+});
+el.examSheetUrlSave.addEventListener('click', () => {
+  const url = el.examSheetUrlInput.value.trim();
+  if (!url) { toast('기출문제 Google Sheets 링크를 입력해 주세요.', 'err'); return; }
+  loadExamFromSheet(url);
 });
 el.csvFileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
@@ -630,14 +966,16 @@ el.resetDataBtn.addEventListener('click', () => {
 // 초기화
 // ---------------------------------------------------------------------------
 (async function init() {
-  const settings = storage.getSettings();
-  applyTheme(!!settings.darkMode);
-  el.sheetUrlInput.value = settings.sheetUrl || '';
+  const basicSettings = storage.getSettings('basic');
+  const examSettings = storage.getSettings('exam');
+  applyTheme(!!basicSettings.darkMode || !!examSettings.darkMode);
+  el.sheetUrlInput.value = basicSettings.sheetUrl || '';
+  el.examSheetUrlInput.value = examSettings.examSheetUrl || '';
   renderNavCounts();
 
-  if (settings.sheetUrl) {
+  if (basicSettings.sheetUrl) {
     setSyncStatus('loading');
-    await loadFromSheet(settings.sheetUrl);
+    await loadFromSheet(basicSettings.sheetUrl);
   } else {
     navigate('empty');
   }
