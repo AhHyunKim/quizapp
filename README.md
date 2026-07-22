@@ -1,8 +1,8 @@
-# Google Sheets 기반 문제풀이 웹앱
+# 빈출문제 카드 — Google Sheets 기반 문제풀이 웹앱
 
 Google Sheets를 문제 데이터의 기준(Source of Truth)으로 쓰고, 사용자의 학습 기록(오답/북마크/즐겨찾기/통계 등)은
-브라우저 LocalStorage에만 저장하는 정적 웹앱입니다. 앱을 다시 배포하지 않아도 시트 링크를 추가하거나 시트를 수정하면 
-다음 접속부터 바로 반영됩니다.
+브라우저 LocalStorage에만 저장하는 정적 웹앱입니다. 앱을 다시 배포하지 않아도 시트만 수정하면 다음 접속부터
+바로 반영됩니다.
 
 ## 폴더 구조
 
@@ -23,13 +23,16 @@ data/sample.csv       테스트용 샘플 문제 (업로드해 주신 파일)
 
 ## 실행 방법
 
+브라우저 보안 정책(module import, CORS) 때문에 `index.html`을 더블클릭해서 여는 `file://` 방식은
+동작하지 않습니다. 아래처럼 로컬 서버로 열거나, 정적 호스팅에 그대로 올리면 됩니다.
+
 ```bash
 # 이 폴더에서
 python3 -m http.server 8000
 # 이후 브라우저에서 http://localhost:8000 접속
 ```
 
-또는 GitHub Pages
+또는 GitHub Pages, Netlify, Vercel 등 정적 호스팅에 폴더 전체를 그대로 올리면 별도 서버 설정 없이 동작합니다.
 
 ## Google Sheets 연결하기
 

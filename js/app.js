@@ -4,7 +4,7 @@
 
 import DataLoader from './dataLoader.js';
 import StorageManager from './storageManager.js';
-import MenuBuilder from './menuBuilder.js';
+import MenuBuilder, { naturalCompare } from './menuBuilder.js';
 import QuizEngine from './quizEngine.js';
 import StatsManager from './statsManager.js';
 
@@ -15,6 +15,7 @@ const menuBuilder = new MenuBuilder();
 let questions = [];
 let byId = new Map();
 let menu = [];
+let examRoundMenu = [];
 let quiz = null;
 let stats = null;
 let revealed = false;
@@ -32,6 +33,9 @@ const el = {
   darkToggleSettings: $('#darkToggleSettings'),
   syncStatus: $('#syncStatus'),
   subjectTree: $('#subjectTree'),
+  roundNavSection: $('#roundNavSection'),
+  roundLabel: $('#roundLabel'),
+  roundTree: $('#roundTree'),
   allLearningNavItem: $('#allLearningNavItem'),
   countWrong: $('#countWrong'),
   countBookmark: $('#countBookmark'),
@@ -52,6 +56,8 @@ const el = {
   subjectStatsTable: $('#subjectStatsTable'),
   roundScopeSelect: $('#roundScopeSelect'),
   roundTable: $('#roundTable'),
+  jumpQuestionId: $('#jumpQuestionId'),
+  jumpQuestionBtn: $('#jumpQuestionBtn'),
 
   sheetUrlInput: $('#sheetUrlInput'),
   sheetUrlSave: $('#sheetUrlSave'),
@@ -177,12 +183,46 @@ function normalizeQuestions(list) {
     return next;
   });
 }
+function jumpToQuestionById() {
+
+    const id = el.jumpQuestionId.value.trim();
+
+    if (!id) return;
+
+    // 현재 학습중인 목록에서만 찾기
+    const idx = quiz.queue.indexOf(id);
+
+    if (idx === -1) {
+        toast('현재 학습 목록에 없는 문제입니다.', 'err');
+        return;
+    }
+
+    quiz.index = idx;
+
+    revealed = false;
+    graded = false;
+    myAnswerDraft = '';
+
+    renderQuizCard();
+}
+/** 기출문제의 "회차" 컬럼 기준으로 문제를 묶는다. 회차가 없는 문제는 별도 그룹으로 모은다. */
+function buildRoundMenu(list) {
+  const map = new Map();
+  list.forEach((q) => {
+    const round = (q.round || '').toString().trim() || '(회차 미지정)';
+    if (!map.has(round)) map.set(round, []);
+    map.get(round).push(q.id);
+  });
+  const names = Array.from(map.keys()).sort(naturalCompare);
+  return names.map((name) => ({ name, ids: map.get(name), count: map.get(name).length }));
+}
 
 async function applyLoadedQuestions(list, sourceLabel, mode = currentMode) {
   const normalized = normalizeQuestions(list);
   questions = normalized;
   byId = new Map(questions.map((q) => [q.id, q]));
   menu = menuBuilder.build(questions);
+  examRoundMenu = mode === 'exam' ? buildRoundMenu(questions) : [];
   quiz = new QuizEngine(byId, storage);
   stats = new StatsManager(storage, byId, mode);
 
@@ -266,6 +306,8 @@ function convertExamRow(row) {
     .map((v) => String(v).trim())
     .slice(0, 4);
 
+  const roundValue = row.round || row.회차 || raw.회차 || raw.Round || raw.round || '';
+
   return {
     id: row.id || row.ID || '',
     subject: row.subject || row.과목 || '',
@@ -274,6 +316,7 @@ function convertExamRow(row) {
     options: normalizedOptions,
     answer: normalizedAnswer,
     explanation: row.explanation || row.해설 || '',
+    round: String(roundValue || '').trim(),
   };
 }
 
@@ -345,6 +388,7 @@ async function loadExamSample() {
         });
       }
       const normalizedOptions = options.filter((v) => v !== undefined && v !== null && v !== '').map((v) => String(v).trim()).slice(0, 4);
+      const roundValue = row.round || row.회차 || raw.회차 || raw.Round || raw.round || '';
       return {
         id: row.id || row.ID || '',
         subject: row.subject || row.과목 || '',
@@ -353,6 +397,7 @@ async function loadExamSample() {
         options: normalizedOptions,
         answer: normalizedAnswer,
         explanation: row.explanation || row.해설 || '',
+        round: String(roundValue || '').trim(),
       };
     }).filter((q) => q.id && q.question);
     await applyLoadedQuestions(converted, '기출문제 샘플 데이터', 'exam');
@@ -470,6 +515,59 @@ function renderSubjectTree() {
     li.appendChild(subList);
     rootSubList.appendChild(li);
   });
+  // 기출문제 회차별 메뉴를 "전체학습" 아래에 추가
+if (currentMode === 'exam' && examRoundMenu.length) {
+
+  const roundLi = document.createElement('li');
+  roundLi.className = 'subject-node';
+
+  const roundRow = document.createElement('div');
+  roundRow.className = 'subject-row';
+
+  const roundToggle = document.createElement('button');
+  roundToggle.className = 'subject-toggle';
+  roundToggle.type = 'button';
+  roundToggle.textContent = '▸';
+
+  const roundBtn = document.createElement('button');
+  roundBtn.className = 'nav-item';
+  roundBtn.textContent = `📝 회차별 (${examRoundMenu.length})`;
+
+  const roundList = document.createElement('ul');
+  roundList.className = 'subsubject-list';
+  roundList.style.display = 'none';
+
+  roundToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = roundList.style.display !== 'none';
+    roundList.style.display = open ? 'none' : 'block';
+    roundToggle.textContent = open ? '▸' : '▾';
+  });
+
+  examRoundMenu.forEach((roundNode) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.className = 'nav-item';
+    btn.textContent = `${roundNode.name} (${roundNode.count})`;
+    btn.addEventListener('click', () => {
+      beginLearning(roundNode.ids, {
+        scope: `round:${roundNode.name}`,
+        breadcrumb: roundNode.name
+      });
+    });
+
+    li.appendChild(btn);
+    roundList.appendChild(li);
+  });
+
+  roundRow.appendChild(roundToggle);
+  roundRow.appendChild(roundBtn);
+
+  roundLi.appendChild(roundRow);
+  roundLi.appendChild(roundList);
+
+  rootSubList.appendChild(roundLi);
+}
 }
 
 function getWrongIds() {
@@ -501,6 +599,53 @@ function renderWrongScopeMenu() {
   });
   allLi.appendChild(allBtn);
   el.wrongScopeTree.appendChild(allLi);
+
+  // 기출문제에서는 회차별 오답도 표시
+  if (currentMode === 'exam' && examRoundMenu.length) {
+
+    const roundLi = document.createElement('li');
+    roundLi.className = 'subject-node';
+
+    const roundBtn = document.createElement('button');
+    roundBtn.className = 'nav-item';
+    roundBtn.textContent = '📝 회차별';
+
+    const roundList = document.createElement('ul');
+    roundList.className = 'subsubject-list';
+    roundList.style.display = 'block';
+
+    examRoundMenu.forEach((roundNode) => {
+
+      const wrongIds = roundNode.ids.filter(id =>
+        storage.getWrongList(currentMode).includes(id)
+      );
+
+      if (!wrongIds.length) return;
+
+      const li = document.createElement('li');
+
+      const btn = document.createElement('button');
+      btn.className = 'nav-item';
+      btn.textContent = `${roundNode.name} (${wrongIds.length})`;
+
+      btn.addEventListener('click', () => {
+        beginLearning(wrongIds, {
+          scope: `wrong:${roundNode.name}`,
+          breadcrumb: `오답노트 › ${roundNode.name}`
+        });
+      });
+
+      li.appendChild(btn);
+      roundList.appendChild(li);
+    });
+
+    if (roundList.children.length) {
+      roundLi.appendChild(roundBtn);
+      roundLi.appendChild(roundList);
+      el.wrongScopeTree.appendChild(roundLi);
+    }
+  }
+  
 
   menu.forEach((subjectNode) => {
     const subjectWrongIds = wrongIds.filter((id) => subjectNode.ids.includes(id));
@@ -585,7 +730,7 @@ function renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
   el.quizCardWrap.innerHTML = `
     <div class="qcard">
       <div class="qcard-eyebrow">
-        <span class="qcard-path">${escapeHtml(q.subject || '')} › ${escapeHtml(q.subSubject || '')}${accuracy !== null ? ` · 누적 정답률 ${accuracy}%` : ''}</span>
+        <span class="qcard-path">${qcardPathLabel(q)}${accuracy !== null ? ` · 누적 정답률 ${accuracy}%` : ''}</span>
         <span class="qcard-tools">
           <button class="qcard-icon-btn bookmark ${isBookmarked ? 'on' : ''}" id="bookmarkBtn" title="북마크">${isBookmarked ? '🏷️' : '🔖'}</button>
           <button class="qcard-icon-btn favorite ${isFavorite ? 'on' : ''}" id="favoriteBtn" title="즐겨찾기">${isFavorite ? '🌟' : '⭐'}</button>
@@ -678,7 +823,7 @@ function renderMultipleChoiceQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
   el.quizCardWrap.innerHTML = `
     <div class="qcard">
       <div class="qcard-eyebrow">
-        <span class="qcard-path">${escapeHtml(q.subject || '')} › ${escapeHtml(q.subSubject || '')}${accuracy !== null ? ` · 누적 정답률 ${accuracy}%` : ''}</span>
+        <span class="qcard-path">${qcardPathLabel(q)}${accuracy !== null ? ` · 누적 정답률 ${accuracy}%` : ''}</span>
         <span class="qcard-tools">
           <button class="qcard-icon-btn bookmark ${isBookmarked ? 'on' : ''}" id="bookmarkBtn" title="북마크">${isBookmarked ? '🏷️' : '🔖'}</button>
           <button class="qcard-icon-btn favorite ${isFavorite ? 'on' : ''}" id="favoriteBtn" title="즐겨찾기">${isFavorite ? '🌟' : '⭐'}</button>
@@ -778,6 +923,11 @@ function goNext() {
 }
 function goPrev() {
   if (quiz.hasPrev()) { quiz.prev(); revealed = false; graded = false; myAnswerDraft = ''; renderQuizCard(); }
+}
+
+function qcardPathLabel(q) {
+  const roundPart = q.round ? `${escapeHtml(q.round)} · ` : '';
+  return `${roundPart}${escapeHtml(q.subject || '')} › ${escapeHtml(q.subSubject || '')}`;
 }
 
 function escapeHtml(str) {
@@ -892,6 +1042,7 @@ el.modeBasicBtn.addEventListener('click', async () => {
   currentModeLabel = '빈출문제';
   el.modeBasicBtn.classList.add('active');
   el.modeExamBtn.classList.remove('active');
+  examRoundMenu = [];
   const settings = storage.getSettings('basic');
   if (settings.sheetUrl) {
     await loadFromSheet(settings.sheetUrl);
@@ -961,7 +1112,14 @@ el.resetDataBtn.addEventListener('click', () => {
   if (quiz) { revealed = false; graded = false; renderQuizCard(); }
   renderStats();
 });
+// 문제 ID로 이동
+el.jumpQuestionBtn.addEventListener('click', jumpToQuestionById);
 
+el.jumpQuestionId.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    jumpToQuestionById();
+  }
+});
 // ---------------------------------------------------------------------------
 // 초기화
 // ---------------------------------------------------------------------------

@@ -49,6 +49,14 @@
       <ul id="subjectTree" class="subject-tree">
         <!-- MenuBuilder 가 여기 동적으로 채움 -->
       </ul>
+
+      <div id="roundNavSection" style="display:none">
+        <div class="nav-divider"></div>
+        <div id="roundLabel" class="nav-label">회차별 (기출문제)</div>
+        <ul id="roundTree" class="subject-tree">
+          <!-- 기출문제의 "회차" 컬럼 기준으로 app.js 가 여기 동적으로 채움 -->
+        </ul>
+      </div>
     </nav>
     <div id="sidebarScrim" class="sidebar-scrim only-mobile"></div>
 
@@ -78,11 +86,11 @@
           <div class="quiz-toolbar-actions">
             <label class="shuffle-toggle">
               <input type="checkbox" id="studyModeToggle" />
-              학습모드 (문제+정답 동시 표시)
+              학습모드 (문제+답)
             </label>
             <label class="shuffle-toggle">
               <input type="checkbox" id="shuffleToggle" />
-              무작위 순서
+              랜덤퀴즈
             </label>
             <button id="finishRoundBtn" class="btn btn-ghost btn-sm">이번 회독 마감</button>
           </div>
@@ -92,7 +100,17 @@
           <div id="quizProgressBar" class="progress-bar"></div>
         </div>
         <div id="quizProgressLabel" class="progress-label">0 / 0</div>
-
+        <div class="jump-id-wrap">
+            <input
+                id="jumpQuestionId"
+                type="text"
+                placeholder="문제 ID 입력 (예: 1.1.002)">
+            <button
+                id="jumpQuestionBtn"
+                class="btn btn-ghost">
+                이동
+            </button>
+        </div>
         <div id="quizCardWrap" class="card-wrap">
           <!-- 카드 내용은 app.js 에서 렌더링 -->
         </div>

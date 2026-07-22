@@ -11,6 +11,7 @@ const HEADER_ALIAS = {
   소과목: 'subSubject',
   문제: 'question',
   정답: 'answer',
+  회차: 'round',
 };
 
 /**
