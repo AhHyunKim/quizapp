@@ -31,6 +31,7 @@ const el = {
   menuToggle: $('#menuToggle'),
   darkToggle: $('#darkToggle'),
   darkToggleSettings: $('#darkToggleSettings'),
+  fontSelect: $('#fontSelect'),
   syncStatus: $('#syncStatus'),
   subjectTree: $('#subjectTree'),
   roundNavSection: $('#roundNavSection'),
@@ -45,6 +46,8 @@ const el = {
   quizBreadcrumb: $('#quizBreadcrumb'),
   studyModeToggle: $('#studyModeToggle'),
   shuffleToggle: $('#shuffleToggle'),
+  gotoIdInput: $('#gotoIdInput'),
+  gotoIdBtn: $('#gotoIdBtn'),
   finishRoundBtn: $('#finishRoundBtn'),
   quizProgressBar: $('#quizProgressBar'),
   quizProgressLabel: $('#quizProgressLabel'),
@@ -56,8 +59,6 @@ const el = {
   subjectStatsTable: $('#subjectStatsTable'),
   roundScopeSelect: $('#roundScopeSelect'),
   roundTable: $('#roundTable'),
-  jumpQuestionId: $('#jumpQuestionId'),
-  jumpQuestionBtn: $('#jumpQuestionBtn'),
 
   sheetUrlInput: $('#sheetUrlInput'),
   sheetUrlSave: $('#sheetUrlSave'),
@@ -96,6 +97,12 @@ function applyTheme(dark) {
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   el.darkToggle.textContent = dark ? '☀️' : '🌙';
   el.darkToggleSettings.checked = dark;
+}
+
+function applyFont(font) {
+  const value = font || 'default';
+  document.documentElement.dataset.font = value;
+  el.fontSelect.value = value;
 }
 
 // ---------------------------------------------------------------------------
@@ -183,28 +190,7 @@ function normalizeQuestions(list) {
     return next;
   });
 }
-function jumpToQuestionById() {
 
-    const id = el.jumpQuestionId.value.trim();
-
-    if (!id) return;
-
-    // 현재 학습중인 목록에서만 찾기
-    const idx = quiz.queue.indexOf(id);
-
-    if (idx === -1) {
-        toast('현재 학습 목록에 없는 문제입니다.', 'err');
-        return;
-    }
-
-    quiz.index = idx;
-
-    revealed = false;
-    graded = false;
-    myAnswerDraft = '';
-
-    renderQuizCard();
-}
 /** 기출문제의 "회차" 컬럼 기준으로 문제를 묶는다. 회차가 없는 문제는 별도 그룹으로 모은다. */
 function buildRoundMenu(list) {
   const map = new Map();
@@ -227,6 +213,7 @@ async function applyLoadedQuestions(list, sourceLabel, mode = currentMode) {
   stats = new StatsManager(storage, byId, mode);
 
   renderSubjectTree();
+  renderRoundTree();
   renderNavCounts();
   setSyncStatus('ok');
   toast(`${sourceLabel} · 문제 ${questions.length}개 로딩 완료`, 'ok');
@@ -515,59 +502,33 @@ function renderSubjectTree() {
     li.appendChild(subList);
     rootSubList.appendChild(li);
   });
-  // 기출문제 회차별 메뉴를 "전체학습" 아래에 추가
-if (currentMode === 'exam' && examRoundMenu.length) {
+}
 
-  const roundLi = document.createElement('li');
-  roundLi.className = 'subject-node';
+// ---------------------------------------------------------------------------
+// 회차별 목록 (기출문제 모드 전용 — "회차" 컬럼 기준)
+// ---------------------------------------------------------------------------
+function renderRoundTree() {
+  if (!el.roundNavSection || !el.roundTree) return;
 
-  const roundRow = document.createElement('div');
-  roundRow.className = 'subject-row';
+  const showRoundNav = currentMode === 'exam' && examRoundMenu.length > 0;
+  el.roundNavSection.style.display = showRoundNav ? '' : 'none';
+  if (!showRoundNav) {
+    el.roundTree.innerHTML = '';
+    return;
+  }
 
-  const roundToggle = document.createElement('button');
-  roundToggle.className = 'subject-toggle';
-  roundToggle.type = 'button';
-  roundToggle.textContent = '▸';
-
-  const roundBtn = document.createElement('button');
-  roundBtn.className = 'nav-item';
-  roundBtn.textContent = `📝 회차별 (${examRoundMenu.length})`;
-
-  const roundList = document.createElement('ul');
-  roundList.className = 'subsubject-list';
-  roundList.style.display = 'none';
-
-  roundToggle.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const open = roundList.style.display !== 'none';
-    roundList.style.display = open ? 'none' : 'block';
-    roundToggle.textContent = open ? '▸' : '▾';
-  });
-
+  el.roundTree.innerHTML = '';
   examRoundMenu.forEach((roundNode) => {
     const li = document.createElement('li');
     const btn = document.createElement('button');
     btn.className = 'nav-item';
     btn.textContent = `${roundNode.name} (${roundNode.count})`;
     btn.addEventListener('click', () => {
-      beginLearning(roundNode.ids, {
-        scope: `round:${roundNode.name}`,
-        breadcrumb: roundNode.name
-      });
+      beginLearning(roundNode.ids, { scope: `round:${roundNode.name}`, breadcrumb: roundNode.name });
     });
-
     li.appendChild(btn);
-    roundList.appendChild(li);
+    el.roundTree.appendChild(li);
   });
-
-  roundRow.appendChild(roundToggle);
-  roundRow.appendChild(roundBtn);
-
-  roundLi.appendChild(roundRow);
-  roundLi.appendChild(roundList);
-
-  rootSubList.appendChild(roundLi);
-}
 }
 
 function getWrongIds() {
@@ -599,53 +560,6 @@ function renderWrongScopeMenu() {
   });
   allLi.appendChild(allBtn);
   el.wrongScopeTree.appendChild(allLi);
-
-  // 기출문제에서는 회차별 오답도 표시
-  if (currentMode === 'exam' && examRoundMenu.length) {
-
-    const roundLi = document.createElement('li');
-    roundLi.className = 'subject-node';
-
-    const roundBtn = document.createElement('button');
-    roundBtn.className = 'nav-item';
-    roundBtn.textContent = '📝 회차별';
-
-    const roundList = document.createElement('ul');
-    roundList.className = 'subsubject-list';
-    roundList.style.display = 'block';
-
-    examRoundMenu.forEach((roundNode) => {
-
-      const wrongIds = roundNode.ids.filter(id =>
-        storage.getWrongList(currentMode).includes(id)
-      );
-
-      if (!wrongIds.length) return;
-
-      const li = document.createElement('li');
-
-      const btn = document.createElement('button');
-      btn.className = 'nav-item';
-      btn.textContent = `${roundNode.name} (${wrongIds.length})`;
-
-      btn.addEventListener('click', () => {
-        beginLearning(wrongIds, {
-          scope: `wrong:${roundNode.name}`,
-          breadcrumb: `오답노트 › ${roundNode.name}`
-        });
-      });
-
-      li.appendChild(btn);
-      roundList.appendChild(li);
-    });
-
-    if (roundList.children.length) {
-      roundLi.appendChild(roundBtn);
-      roundLi.appendChild(roundList);
-      el.wrongScopeTree.appendChild(roundLi);
-    }
-  }
-  
 
   menu.forEach((subjectNode) => {
     const subjectWrongIds = wrongIds.filter((id) => subjectNode.ids.includes(id));
@@ -707,6 +621,29 @@ function startSession(ids, { scope, breadcrumb }) {
 
 function beginLearning(ids, { scope, breadcrumb }) {
   startSession(ids, { scope, breadcrumb });
+  navigate('quiz');
+  renderQuizCard();
+}
+
+/** 사이드바 필터와 무관하게, 입력한 문제 ID로 바로 이동한다. */
+function goToQuestionId(rawId) {
+  const id = String(rawId || '').trim();
+  if (!id) { toast('문제 ID를 입력해 주세요.', 'err'); return; }
+  if (!byId.has(id)) { toast(`ID "${id}" 문제를 찾을 수 없습니다.`, 'err'); return; }
+  if (!quiz) return;
+
+  let idx = quiz.queue.indexOf(id);
+  if (idx < 0) {
+    // 현재 필터(과목/오답노트 등)에 없는 문제면 전체 목록으로 전환해서 찾는다.
+    startSession(questions.map((q) => q.id), { scope: '__all__', breadcrumb: '전체' });
+    idx = quiz.queue.indexOf(id);
+  }
+  if (idx < 0) return;
+
+  quiz.index = idx;
+  revealed = false;
+  graded = false;
+  myAnswerDraft = '';
   navigate('quiz');
   renderQuizCard();
 }
@@ -1034,6 +971,11 @@ el.darkToggleSettings.addEventListener('change', (e) => {
   storage.setSettings({ darkMode: e.target.checked }, 'exam');
   applyTheme(e.target.checked);
 });
+el.fontSelect.addEventListener('change', (e) => {
+  storage.setSettings({ font: e.target.value }, 'basic');
+  storage.setSettings({ font: e.target.value }, 'exam');
+  applyFont(e.target.value);
+});
 
 el.prevBtn.addEventListener('click', goPrev);
 el.nextBtn.addEventListener('click', goNext);
@@ -1043,6 +985,7 @@ el.modeBasicBtn.addEventListener('click', async () => {
   el.modeBasicBtn.classList.add('active');
   el.modeExamBtn.classList.remove('active');
   examRoundMenu = [];
+  renderRoundTree();
   const settings = storage.getSettings('basic');
   if (settings.sheetUrl) {
     await loadFromSheet(settings.sheetUrl);
@@ -1076,6 +1019,12 @@ el.shuffleToggle.addEventListener('change', () => {
     revealed = false; graded = false;
     renderQuizCard();
   }
+});
+el.gotoIdBtn.addEventListener('click', () => {
+  goToQuestionId(el.gotoIdInput.value);
+});
+el.gotoIdInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') goToQuestionId(el.gotoIdInput.value);
 });
 el.finishRoundBtn.addEventListener('click', () => {
   const result = quiz ? quiz.finishRound(currentMode) : null;
@@ -1112,14 +1061,7 @@ el.resetDataBtn.addEventListener('click', () => {
   if (quiz) { revealed = false; graded = false; renderQuizCard(); }
   renderStats();
 });
-// 문제 ID로 이동
-el.jumpQuestionBtn.addEventListener('click', jumpToQuestionById);
 
-el.jumpQuestionId.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    jumpToQuestionById();
-  }
-});
 // ---------------------------------------------------------------------------
 // 초기화
 // ---------------------------------------------------------------------------
@@ -1127,6 +1069,7 @@ el.jumpQuestionId.addEventListener('keydown', (e) => {
   const basicSettings = storage.getSettings('basic');
   const examSettings = storage.getSettings('exam');
   applyTheme(!!basicSettings.darkMode || !!examSettings.darkMode);
+  applyFont(basicSettings.font || examSettings.font || 'default');
   el.sheetUrlInput.value = basicSettings.sheetUrl || '';
   el.examSheetUrlInput.value = examSettings.examSheetUrl || '';
   renderNavCounts();

@@ -41,7 +41,7 @@ export default class StorageManager {
 
   // ---- 설정 (다크모드, 시트 URL 등) ----
   getSettings(mode = 'default') {
-    return this._read(this._modeKey(KEYS.SETTINGS, mode), { darkMode: false, sheetUrl: '' });
+    return this._read(this._modeKey(KEYS.SETTINGS, mode), { darkMode: false, sheetUrl: '', font: 'default' });
   }
   setSettings(patch, mode = 'default') {
     const merged = { ...this.getSettings(mode), ...patch };

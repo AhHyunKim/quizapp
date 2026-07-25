@@ -86,12 +86,16 @@
           <div class="quiz-toolbar-actions">
             <label class="shuffle-toggle">
               <input type="checkbox" id="studyModeToggle" />
-              학습모드 (문제+답)
+              학습모드 (문제+정답 동시 표시)
             </label>
             <label class="shuffle-toggle">
               <input type="checkbox" id="shuffleToggle" />
-              랜덤퀴즈
+              무작위 순서
             </label>
+            <div class="goto-id-row">
+              <input type="text" id="gotoIdInput" placeholder="문제 ID로 이동" />
+              <button id="gotoIdBtn" class="btn btn-ghost btn-sm" type="button">이동</button>
+            </div>
             <button id="finishRoundBtn" class="btn btn-ghost btn-sm">이번 회독 마감</button>
           </div>
         </div>
@@ -100,17 +104,7 @@
           <div id="quizProgressBar" class="progress-bar"></div>
         </div>
         <div id="quizProgressLabel" class="progress-label">0 / 0</div>
-        <div class="jump-id-wrap">
-            <input
-                id="jumpQuestionId"
-                type="text"
-                placeholder="문제 ID 입력 (예: 1.1.002)">
-            <button
-                id="jumpQuestionBtn"
-                class="btn btn-ghost">
-                이동
-            </button>
-        </div>
+
         <div id="quizCardWrap" class="card-wrap">
           <!-- 카드 내용은 app.js 에서 렌더링 -->
         </div>
@@ -179,6 +173,20 @@
           <h3>4. 화면</h3>
           <div class="settings-row">
             <label class="shuffle-toggle"><input type="checkbox" id="darkToggleSettings" /> 다크모드</label>
+          </div>
+          <div class="settings-row">
+            <label for="fontSelect">글꼴</label>
+            <select id="fontSelect">
+              <option value="default">기본 (손글씨체)</option>
+              <option value="sans">고딕체</option>
+              <option value="serif">명조체</option>
+              <option value="system">시스템 기본</option>
+              <option value="ridibatang">리디바탕체</option>
+              <option value="gangwon">강원교육모두체</option>
+              <option value="gowoondodum">고운돋움체</option>
+              <option value="seoulnamsan">서울남산체</option>
+              <option value="d2coding">D2Coding (코딩 폰트)</option>
+            </select>
           </div>
         </div>
 
