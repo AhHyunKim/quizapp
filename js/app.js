@@ -862,6 +862,18 @@ function renderQuizCard() {
   } else {
     renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite);
   }
+  // 👇 여기부터 추가: 화면에 카드가 그려진 직후 수식을 렌더링
+  if (window.renderMathInElement) {
+    window.renderMathInElement(el.quizCardWrap, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false}, // 사용자가 작성한 $...$ 인라인 수식 처리
+        {left: '\\(', right: '\\)', display: false},
+        {left: '\\[', right: '\\]', display: true}
+      ],
+      throwOnError: false
+    });
+  }
 }
 
 function goNext() {
