@@ -253,9 +253,8 @@ h1 { font-family: var(--font-serif); font-size: 26px; margin: 0 0 20px; letter-s
 /* ===== 퀴즈 화면 ===== */
 .quiz-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 10px; flex-wrap: wrap; }
 .breadcrumb { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-muted); }
-.quiz-toolbar-actions { display: flex; align-items: center; gap: 14px; }
-.shuffle-toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-muted); cursor: pointer; }
-
+.quiz-toolbar-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.shuffle-toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-muted); cursor: pointer; white-space: nowrap; word-break: keep-all; }
 .goto-id-row { display: flex; align-items: center; gap: 6px; }
 .goto-id-row input[type="text"] {
   width: 130px; padding: 6px 9px; font-size: 12.5px; border-radius: 8px;
