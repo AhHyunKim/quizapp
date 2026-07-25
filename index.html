@@ -170,7 +170,28 @@
         </div>
 
         <div class="settings-block">
-          <h3>4. 화면</h3>
+          <h3>4. 다른 기기와 동기화 (선택, Google Apps Script)</h3>
+          <p class="settings-desc">
+            오답노트/북마크/즐겨찾기/통계/회독 기록을 Google Sheets에도 함께 저장해서, 다른 기기·브라우저에서
+            접속해도 같은 학습기록을 볼 수 있게 합니다. Apps Script를 웹앱으로 배포한 뒤 생성되는
+            URL(<code>…/exec</code>)을 붙여넣으세요. 비워두면 지금처럼 이 브라우저에만 저장됩니다.
+          </p>
+          <div class="settings-row">
+            <input id="syncUrlInput" type="text" placeholder="https://script.google.com/macros/s/…/exec" />
+            <button id="syncUrlSave" class="btn btn-primary">동기화 연결</button>
+          </div>
+          <p class="settings-desc" style="margin-top:12px">
+            학습기록을 저장할 시트가 Apps Script에 미리 지정된 시트와 다르다면, 그 시트의 링크를 여기에 붙여넣으세요
+            (비워두면 Apps Script에 지정된 기본 시트를 사용합니다).
+          </p>
+          <div class="settings-row">
+            <input id="syncSheetUrlInput" type="text" placeholder="https://docs.google.com/spreadsheets/d/…" />
+          </div>
+          <p id="syncUrlStatus" class="settings-status"></p>
+        </div>
+
+        <div class="settings-block">
+          <h3>5. 화면</h3>
           <div class="settings-row">
             <label class="shuffle-toggle"><input type="checkbox" id="darkToggleSettings" /> 다크모드</label>
           </div>
@@ -191,7 +212,7 @@
         </div>
 
         <div class="settings-block danger">
-          <h3>5. 학습기록 초기화</h3>
+          <h3>6. 학습기록 초기화</h3>
           <p class="settings-desc">오답노트/북마크/즐겨찾기/통계/회독 기록을 모두 삭제합니다. 문제 데이터(Google Sheets)에는 영향이 없습니다.</p>
           <button id="resetDataBtn" class="btn btn-danger">학습기록 전체 삭제</button>
         </div>

@@ -66,6 +66,10 @@ const el = {
   examSheetUrlInput: $('#examSheetUrlInput'),
   examSheetUrlSave: $('#examSheetUrlSave'),
   examSheetUrlStatus: $('#examSheetUrlStatus'),
+  syncUrlInput: $('#syncUrlInput'),
+  syncUrlSave: $('#syncUrlSave'),
+  syncUrlStatus: $('#syncUrlStatus'),
+  syncSheetUrlInput: $('#syncSheetUrlInput'),
   csvFileInput: $('#csvFileInput'),
   csvFileLoadSample: $('#csvFileLoadSample'),
   resetDataBtn: $('#resetDataBtn'),
@@ -218,6 +222,11 @@ async function applyLoadedQuestions(list, sourceLabel, mode = currentMode) {
   setSyncStatus('ok');
   toast(`${sourceLabel} · 문제 ${questions.length}개 로딩 완료`, 'ok');
   window.__debug_app_state = { mode, questionCount: questions.length, currentMode, questions };
+
+  if (storage.getSyncUrl(mode)) {
+    await storage.pullFromCloud(mode);
+    renderNavCounts();
+  }
 
   const last = storage.getLastPosition(mode);
   if (last && byId.has(last.id)) {
@@ -1045,6 +1054,31 @@ el.examSheetUrlSave.addEventListener('click', () => {
   if (!url) { toast('기출문제 Google Sheets 링크를 입력해 주세요.', 'err'); return; }
   loadExamFromSheet(url);
 });
+el.syncUrlSave.addEventListener('click', async () => {
+  const url = el.syncUrlInput.value.trim();
+  const sheetUrl = el.syncSheetUrlInput.value.trim();
+  storage.setSettings({ syncUrl: url, syncSheetUrl: sheetUrl }, 'basic');
+  storage.setSettings({ syncUrl: url, syncSheetUrl: sheetUrl }, 'exam');
+  if (!url) {
+    el.syncUrlStatus.textContent = '동기화를 해제했습니다 (이 브라우저에만 저장됩니다).';
+    el.syncUrlStatus.className = 'settings-status';
+    return;
+  }
+  el.syncUrlStatus.textContent = '불러오는 중…';
+  el.syncUrlStatus.className = 'settings-status';
+  const data = await storage.pullFromCloud(currentMode);
+  if (data) {
+    renderNavCounts();
+    if ($('#view-stats').classList.contains('active')) renderStats();
+    el.syncUrlStatus.textContent = '연결 완료 · 이 기기의 학습기록을 시트 기준으로 갱신했습니다.';
+    el.syncUrlStatus.className = 'settings-status ok';
+    toast('동기화 연결 완료', 'ok');
+  } else {
+    el.syncUrlStatus.textContent = '연결에 실패했습니다. Apps Script 배포 URL과 접근 권한을 확인해 주세요.';
+    el.syncUrlStatus.className = 'settings-status err';
+    toast('동기화 연결 실패', 'err');
+  }
+});
 el.csvFileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (file) loadCSVFile(file);
@@ -1072,6 +1106,8 @@ el.resetDataBtn.addEventListener('click', () => {
   applyFont(basicSettings.font || examSettings.font || 'default');
   el.sheetUrlInput.value = basicSettings.sheetUrl || '';
   el.examSheetUrlInput.value = examSettings.examSheetUrl || '';
+  el.syncUrlInput.value = storage.getSyncUrl('basic') || storage.getSyncUrl('exam') || '';
+  el.syncSheetUrlInput.value = basicSettings.syncSheetUrl || examSettings.syncSheetUrl || '';
   renderNavCounts();
 
   if (basicSettings.sheetUrl) {

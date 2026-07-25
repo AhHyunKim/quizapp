@@ -45,7 +45,7 @@ export default class QuizEngine {
   submitResult(correct, mode = 'default') {
     const q = this.current();
     if (!q) return null;
-    const stats = this.storage.recordAnswer(q.id, q.subject, correct, mode);
+    const stats = this.storage.recordAnswer(q.id, q.subject, q.subSubject, correct, mode);
     this.sessionTotal += 1;
     if (correct) this.sessionCorrect += 1;
     this.storage.setLastPosition({ scope: this.scope, id: q.id, index: this.index }, mode);
