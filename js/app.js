@@ -694,7 +694,7 @@ function renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
       ${effectiveRevealed ? `
         <div class="qcard-answer-wrap">
           <div class="qcard-answer-label">정답</div>
-          <div class="qcard-answer-text">${escapeHtml(q.answer || '')}</div>
+          <div class="qcard-answer-text">${q.answer || ''}</div>
         </div>
         ${!graded ? `
           <div class="grade-actions">
@@ -793,7 +793,7 @@ function renderMultipleChoiceQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
       ${showResult ? `
         <div class="qcard-answer-wrap">
           <div class="qcard-answer-label">해설</div>
-          <div class="qcard-answer-text">${escapeHtml(q.explanation || '')}</div>
+          <div class="qcard-answer-text">${q.explanation || ''}</div>
         </div>
       ` : ''}
 
