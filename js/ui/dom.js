@@ -56,6 +56,10 @@ export const el = {
   syncSheetUrlInput: $('#syncSheetUrlInput'),
   csvFileInput: $('#csvFileInput'),
   csvFileLoadSample: $('#csvFileLoadSample'),
+  exportBackupBtn: $('#exportBackupBtn'),
+  importBackupBtn: $('#importBackupBtn'),
+  importBackupInput: $('#importBackupInput'),
+  backupStatus: $('#backupStatus'),
   resetDataBtn: $('#resetDataBtn'),
 
   emptyGoSettings: $('#emptyGoSettings'),

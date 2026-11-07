@@ -314,6 +314,40 @@ export default class StorageManager {
   getLastPosition(mode = 'default') { return this._read(this._modeKey(KEYS.LAST_POSITION, mode), null); }
   setLastPosition(pos, mode = 'default') { this._write(this._modeKey(KEYS.LAST_POSITION, mode), pos); }
 
+  // ---- 백업 / 복원 (qa_ 로 시작하는 LocalStorage 키 전체) ----
+  exportAll() {
+    const data = {};
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('qa_')) data[key] = localStorage.getItem(key);
+    }
+    return { version: 1, exportedAt: new Date().toISOString(), data };
+  }
+
+  /** 백업 객체가 올바른 형식이면 null, 아니면 오류 메시지를 돌려준다. */
+  validateBackup(backup) {
+    if (!backup || typeof backup !== 'object' || backup.version !== 1) return '학습기록 백업 파일이 아니거나 지원하지 않는 버전입니다.';
+    const data = backup.data;
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return '백업 파일에 데이터가 없습니다.';
+    const keys = Object.keys(data);
+    if (!keys.length) return '백업 파일에 저장된 기록이 없습니다.';
+    if (keys.some((k) => !k.startsWith('qa_') || typeof data[k] !== 'string')) return '백업 파일의 형식이 올바르지 않습니다.';
+    return null;
+  }
+
+  /** 현재 qa_ 키를 모두 지우고 백업 내용으로 덮어쓴다. 저장한 키 개수를 반환한다. */
+  importAll(backup) {
+    const existing = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('qa_')) existing.push(key);
+    }
+    existing.forEach((key) => localStorage.removeItem(key));
+    const keys = Object.keys(backup.data);
+    keys.forEach((key) => localStorage.setItem(key, backup.data[key]));
+    return keys.length;
+  }
+
   // ---- 전체 초기화 (설정 화면의 "학습기록 초기화" 용) ----
   clearAllUserData() {
     Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
