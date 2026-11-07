@@ -517,3 +517,24 @@ h1 { font-family: var(--font-serif); font-size: 32px; line-height: 1.25; margin:
   .mode-switch { margin-right: 0; }
   .brand-name { display: none; }
 }
+
+
+/* ===== 모의고사 ===== */
+.mock-start-btn { font-size: 13px; padding-left: 28px; color: var(--ink-muted); }
+.mock-header { position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 0; margin-bottom: 12px; background: var(--bg); border-bottom: 1px solid var(--border); }
+.mock-title { font-weight: 700; font-size: 17px; }
+.mock-meta { font-size: 13.5px; color: var(--ink-muted); }
+.mock-timer { font-family: var(--font-mono); }
+.mock-header-actions, .mock-footer { display: flex; gap: 8px; }
+.mock-footer { justify-content: center; margin: 20px 0 40px; }
+.mock-q { margin-bottom: 16px; }
+.mock-score { font-size: 22px; font-weight: 700; margin-bottom: 12px; }
+.mock-score-num { font-size: 40px; color: var(--accent-strong); }
+.mock-score-pct { font-size: 16px; color: var(--ink-muted); }
+.mock-subject-row { display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px solid var(--border); font-size: 15px; }
+.mock-wrong-title { margin: 22px 0 10px; font-size: 16px; }
+.mock-wrong { margin-bottom: 14px; }
+.qcard-path-line { font-size: 13px; color: var(--ink-muted); margin-bottom: 8px; }
+.mock-wrong-line { font-size: 15px; margin-top: 6px; }
+.mock-wrong-line.bad { color: var(--bad); }
+.mock-wrong-line.good { color: var(--good); font-weight: 700; }
