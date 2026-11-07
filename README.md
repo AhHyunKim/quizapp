@@ -14,7 +14,17 @@ js/storageManager.js  LocalStorage 기반 사용자 학습 데이터 (저장 계
 js/menuBuilder.js     과목/소과목 → 메뉴 트리 생성
 js/quizEngine.js      문제풀이 세션(순서/진행/채점) 관리
 js/statsManager.js    저장된 데이터를 통계용으로 집계
-js/app.js             위 모듈들을 화면(DOM)에 연결하는 컨트롤러
+js/reviewScheduler.js 오늘의 복습 대상 계산 (순수 함수)
+js/questionNormalizer.js  시트 행 → 화면용 Question 정규화 (보기 파싱, 기출 변환)
+js/dataLoading.js     문제 불러오기(시트/샘플/CSV)와 초기 화면 구성
+js/state.js           앱 전체 공유 상태와 서비스 인스턴스
+js/app.js             진입점: 화면 전환(navigate), 모드 전환, 초기화
+js/ui/dom.js          $ 헬퍼, el 맵, toast, escapeHtml/sanitizeHtml, 테마/글꼴
+js/ui/quizView.js     퀴즈 카드 렌더링, 세션, 키보드 단축키, 스와이프
+js/ui/sidebarView.js  과목/회차/오답 범위 트리, 메뉴 카운트
+js/ui/statsView.js    통계 화면
+js/ui/settingsView.js 설정 화면 이벤트
+js/ui/mockView.js     기출 모의고사
 data/sample.csv       테스트용 샘플 문제 (빈출문제 모드)
 data/exam-sample.csv  테스트용 샘플 문제 (기출문제 모드, 보기 4개 이상)
 ```
