@@ -4,7 +4,7 @@
 // - 문제 데이터(시트 CSV, data/*.csv)는 network-first → 실패하면 마지막으로 받은 응답.
 // 앱 파일을 수정해 배포할 때는 CACHE_VERSION 을 올려야 사용자에게 새 파일이 반영된다.
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const SHELL_CACHE = `quiz-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `quiz-data-${CACHE_VERSION}`;
 

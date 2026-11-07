@@ -4,7 +4,7 @@
 import { state, storage } from '../state.js';
 import { getDueIds } from '../reviewScheduler.js';
 import { icon } from './icons.js';
-import { el } from './dom.js';
+import { el, escapeHtml } from './dom.js';
 import { beginLearning, renderQuizCard } from './quizView.js';
 import { startMock } from './mockView.js';
 import { navigate } from '../app.js';
@@ -12,51 +12,38 @@ import { navigate } from '../app.js';
 // ---------------------------------------------------------------------------
 // 사이드바 (메뉴 트리는 Google Sheets 의 과목/소과목 컬럼으로부터 매번 재생성)
 // ---------------------------------------------------------------------------
+/** 접었다 펼 수 있는 토글 버튼 (쉐브론 아이콘, aria-expanded로 상태 전달) */
+function makeToggle(label, list) {
+  const toggle = document.createElement('button');
+  toggle.className = 'subject-toggle';
+  toggle.type = 'button';
+  toggle.innerHTML = icon('chevron', 18);
+  toggle.setAttribute('aria-label', label);
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = toggle.getAttribute('aria-expanded') !== 'true';
+    toggle.setAttribute('aria-expanded', String(open));
+    list.style.display = open ? 'block' : 'none';
+  });
+  return toggle;
+}
+
 export function renderSubjectTree() {
   el.subjectTree.innerHTML = '';
-  if (el.allLearningNavItem) el.allLearningNavItem.innerHTML = '';
 
-  const rootLi = document.createElement('li');
-  rootLi.className = 'subject-node root-node';
-
-  const rootRow = document.createElement('div');
-  rootRow.className = 'subject-row';
-
-  const rootToggle = document.createElement('button');
-  rootToggle.className = 'subject-toggle';
-  rootToggle.type = 'button';
-  rootToggle.textContent = '▸';
-  rootToggle.setAttribute('aria-label', '과목 목록 열기');
-
-  const rootBtn = document.createElement('button');
-  rootBtn.className = 'nav-item';
-  rootBtn.innerHTML = `${icon('book')}전체 학습 (${state.questions.length})`;
-
-  const rootSubList = document.createElement('ul');
-  rootSubList.className = 'subsubject-list';
-  rootSubList.style.display = 'none';
-
-  rootToggle.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isOpen = rootSubList.style.display !== 'none';
-    rootSubList.style.display = isOpen ? 'none' : 'block';
-    rootToggle.textContent = isOpen ? '▸' : '▾';
-  });
-
-  rootBtn.addEventListener('click', () => {
+  // 전체 풀기: 토글 없이 한 줄
+  const allLi = document.createElement('li');
+  const allBtn = document.createElement('button');
+  allBtn.className = 'nav-item nav-all';
+  allBtn.innerHTML = `${icon('book')}전체 <span class="nav-count">${state.questions.length}</span>`;
+  allBtn.addEventListener('click', () => {
     beginLearning(state.questions.map((q) => q.id), { scope: '__all__', breadcrumb: '전체' });
   });
+  allLi.appendChild(allBtn);
+  el.subjectTree.appendChild(allLi);
 
-  rootRow.appendChild(rootToggle);
-  rootRow.appendChild(rootBtn);
-  rootLi.appendChild(rootRow);
-  rootLi.appendChild(rootSubList);
-  if (el.allLearningNavItem) {
-    el.allLearningNavItem.appendChild(rootLi);
-  } else {
-    el.subjectTree.appendChild(rootLi);
-  }
-
+  // 과목은 항상 보이고, 소과목만 눌러서 펼친다.
   state.menu.forEach((subjectNode) => {
     const li = document.createElement('li');
     li.className = 'subject-node';
@@ -64,36 +51,22 @@ export function renderSubjectTree() {
     const row = document.createElement('div');
     row.className = 'subject-row';
 
-    const toggle = document.createElement('button');
-    toggle.className = 'subject-toggle';
-    toggle.type = 'button';
-    toggle.textContent = '▸';
-    toggle.setAttribute('aria-label', '소과목 목록 열기');
-
     const header = document.createElement('button');
     header.className = 'nav-item';
-    header.textContent = `${subjectNode.name} (${subjectNode.count})`;
+    header.innerHTML = `<span class="nav-text">${escapeHtml(subjectNode.name)}</span><span class="nav-count">${subjectNode.count}</span>`;
+    header.addEventListener('click', () => {
+      beginLearning(subjectNode.ids, { scope: subjectNode.name, breadcrumb: subjectNode.name });
+    });
 
     const subList = document.createElement('ul');
     subList.className = 'subsubject-list';
     subList.style.display = 'none';
 
-    toggle.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isOpen = subList.style.display !== 'none';
-      subList.style.display = isOpen ? 'none' : 'block';
-      toggle.textContent = isOpen ? '▸' : '▾';
-    });
-
-    header.addEventListener('click', () => {
-      beginLearning(subjectNode.ids, { scope: subjectNode.name, breadcrumb: subjectNode.name });
-    });
-
     subjectNode.children.forEach((subNode) => {
       const subLi = document.createElement('li');
       const subBtn = document.createElement('button');
       subBtn.className = 'nav-item';
-      subBtn.textContent = `${subNode.name} (${subNode.count})`;
+      subBtn.innerHTML = `<span class="nav-text">${escapeHtml(subNode.name)}</span><span class="nav-count">${subNode.count}</span>`;
       subBtn.addEventListener('click', () => {
         beginLearning(subNode.ids, { scope: subjectNode.name, breadcrumb: `${subjectNode.name} › ${subNode.name}` });
       });
@@ -101,11 +74,11 @@ export function renderSubjectTree() {
       subList.appendChild(subLi);
     });
 
-    row.appendChild(toggle);
     row.appendChild(header);
+    if (subjectNode.children.length) row.appendChild(makeToggle(`${subjectNode.name} 소과목 펼치기`, subList));
     li.appendChild(row);
     li.appendChild(subList);
-    rootSubList.appendChild(li);
+    el.subjectTree.appendChild(li);
   });
 }
 
@@ -125,17 +98,21 @@ export function renderRoundTree() {
   el.roundTree.innerHTML = '';
   state.examRoundMenu.forEach((roundNode) => {
     const li = document.createElement('li');
+    li.className = 'round-row';
     const btn = document.createElement('button');
     btn.className = 'nav-item';
-    btn.textContent = `${roundNode.name} (${roundNode.count})`;
+    btn.innerHTML = `<span class="nav-text">${escapeHtml(roundNode.name)}</span><span class="nav-count">${roundNode.count}</span>`;
     btn.addEventListener('click', () => {
       beginLearning(roundNode.ids, { scope: `round:${roundNode.name}`, breadcrumb: roundNode.name });
     });
-    li.appendChild(btn);
     const mockBtn = document.createElement('button');
-    mockBtn.className = 'nav-item mock-start-btn';
-    mockBtn.innerHTML = `${icon('pencil', 16)}모의고사로 풀기`;
+    mockBtn.className = 'icon-btn round-mock-btn';
+    mockBtn.type = 'button';
+    mockBtn.title = '모의고사로 풀기';
+    mockBtn.setAttribute('aria-label', `${roundNode.name} 모의고사로 풀기`);
+    mockBtn.innerHTML = icon('pencil', 18);
     mockBtn.addEventListener('click', () => startMock(roundNode));
+    li.appendChild(btn);
     li.appendChild(mockBtn);
     el.roundTree.appendChild(li);
   });
@@ -216,8 +193,13 @@ export function getReviewIds() {
 }
 
 export function renderNavCounts() {
-  el.countReview.textContent = getReviewIds().length;
-  el.countWrong.textContent = storage.getWrongList(state.currentMode).length;
+  const reviewCount = getReviewIds().length;
+  const wrongCount = storage.getWrongList(state.currentMode).length;
+  el.countReview.textContent = reviewCount;
+  el.countWrong.textContent = wrongCount;
+  // 오늘 할 것이 남아 있으면 배지를 강조한다.
+  el.countReview.classList.toggle('has', reviewCount > 0);
+  el.countWrong.classList.toggle('has', wrongCount > 0);
   el.countBookmark.textContent = storage.getBookmarks(state.currentMode).length;
   el.countFavorite.textContent = storage.getFavorites(state.currentMode).length;
   renderWrongScopeMenu();

@@ -18,7 +18,6 @@ export const el = {
   roundNavSection: $('#roundNavSection'),
   roundLabel: $('#roundLabel'),
   roundTree: $('#roundTree'),
-  allLearningNavItem: $('#allLearningNavItem'),
   countWrong: $('#countWrong'),
   countBookmark: $('#countBookmark'),
   countReview: $('#countReview'),

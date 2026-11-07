@@ -36,30 +36,44 @@
 
   <div class="app-body">
     <!-- ===== 사이드바 ===== -->
-    <nav id="sidebar" class="sidebar">
-      <ul class="nav-list">
-        <li id="allLearningNavItem" class="subject-node root-node"></li>
-        <li><button class="nav-item" data-nav="review"><span data-icon="calendar-check"></span>오늘의 복습 <span id="countReview" class="nav-count">0</span></button></li>
-        <li><button class="nav-item" data-nav="stats"><span data-icon="chart-bar"></span>통계</button></li>
-        <li class="subject-node">
-          <button class="nav-item" data-nav="wrong"><span data-icon="notes-x"></span>오답노트 <span id="countWrong" class="nav-count">0</span></button>
-          <ul id="wrongScopeTree" class="subsubject-list" style="display:none"></ul>
-        </li>
-        <li><button class="nav-item" data-nav="bookmark"><span data-icon="bookmark"></span>북마크 <span id="countBookmark" class="nav-count">0</span></button></li>
-        <li><button class="nav-item" data-nav="favorite"><span data-icon="star"></span>즐겨찾기 <span id="countFavorite" class="nav-count">0</span></button></li>
-        <li><button class="nav-item" data-nav="settings"><span data-icon="gear"></span>설정</button></li>
-      </ul>
-      <div class="nav-divider"></div>
-      <div class="nav-label">과목별 학습</div>
-      <ul id="subjectTree" class="subject-tree">
-        <!-- MenuBuilder 가 여기 동적으로 채움 -->
-      </ul>
+    <nav id="sidebar" class="sidebar" aria-label="메뉴">
+      <div class="nav-group nav-today">
+        <div class="nav-label">오늘 할 것</div>
+        <ul class="nav-list">
+          <li><button class="nav-item" data-nav="review"><span data-icon="calendar-check"></span>오늘의 복습 <span id="countReview" class="nav-count">0</span></button></li>
+          <li class="subject-node">
+            <button class="nav-item" data-nav="wrong"><span data-icon="notes-x"></span>오답노트 <span id="countWrong" class="nav-count">0</span></button>
+            <ul id="wrongScopeTree" class="subsubject-list" style="display:none"></ul>
+          </li>
+        </ul>
+      </div>
 
-      <div id="roundNavSection" style="display:none">
-        <div class="nav-divider"></div>
-        <div id="roundLabel" class="nav-label">회차별 (기출문제)</div>
+      <div class="nav-group">
+        <div class="nav-label">풀 범위</div>
+        <ul id="subjectTree" class="subject-tree">
+          <!-- 전체 + 과목/소과목: sidebarView.js 가 시트 내용으로 채움 -->
+        </ul>
+      </div>
+
+      <div id="roundNavSection" class="nav-group" style="display:none">
+        <div id="roundLabel" class="nav-label">회차 (기출문제)</div>
         <ul id="roundTree" class="subject-tree">
-          <!-- 기출문제의 "회차" 컬럼 기준으로 app.js 가 여기 동적으로 채움 -->
+          <!-- 기출문제의 "회차" 컬럼 기준으로 sidebarView.js 가 채움 -->
+        </ul>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label">저장한 것</div>
+        <ul class="nav-list">
+          <li><button class="nav-item" data-nav="bookmark"><span data-icon="bookmark"></span>북마크 <span id="countBookmark" class="nav-count">0</span></button></li>
+          <li><button class="nav-item" data-nav="favorite"><span data-icon="star"></span>즐겨찾기 <span id="countFavorite" class="nav-count">0</span></button></li>
+        </ul>
+      </div>
+
+      <div class="nav-group nav-foot">
+        <ul class="nav-list">
+          <li><button class="nav-item" data-nav="stats"><span data-icon="chart-bar"></span>통계</button></li>
+          <li><button class="nav-item" data-nav="settings"><span data-icon="gear"></span>설정</button></li>
         </ul>
       </div>
     </nav>
