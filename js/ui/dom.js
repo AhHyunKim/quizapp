@@ -1,6 +1,8 @@
 // ui/dom.js
 // DOM 헬퍼: $ 선택자, 요소 맵(el), 토스트, 테마/글꼴 적용, HTML escape/sanitize.
 
+import { icon, hydrateIcons } from './icons.js';
+
 export const $ = (sel) => document.querySelector(sel);
 
 export const el = {
@@ -79,7 +81,7 @@ export function setSyncStatus(state) {
 
 export function applyTheme(dark) {
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-  el.darkToggle.textContent = dark ? '☀️' : '🌙';
+  el.darkToggle.innerHTML = icon(dark ? 'sun' : 'moon');
   el.darkToggleSettings.checked = dark;
 }
 
@@ -104,3 +106,6 @@ export function sanitizeHtml(html) {
   if (window.DOMPurify) return window.DOMPurify.sanitize(value);
   return escapeHtml(value);
 }
+
+// 정적 HTML의 아이콘 자리표시자를 SVG로 바꾼다 (다크모드 버튼은 applyTheme가 다시 그린다).
+hydrateIcons();

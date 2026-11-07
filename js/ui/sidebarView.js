@@ -3,6 +3,7 @@
 
 import { state, storage } from '../state.js';
 import { getDueIds } from '../reviewScheduler.js';
+import { icon } from './icons.js';
 import { el } from './dom.js';
 import { beginLearning, renderQuizCard } from './quizView.js';
 import { startMock } from './mockView.js';
@@ -29,7 +30,7 @@ export function renderSubjectTree() {
 
   const rootBtn = document.createElement('button');
   rootBtn.className = 'nav-item';
-  rootBtn.textContent = `🐣 전체 학습 (${state.questions.length})`;
+  rootBtn.innerHTML = `${icon('book')}전체 학습 (${state.questions.length})`;
 
   const rootSubList = document.createElement('ul');
   rootSubList.className = 'subsubject-list';
@@ -133,7 +134,7 @@ export function renderRoundTree() {
     li.appendChild(btn);
     const mockBtn = document.createElement('button');
     mockBtn.className = 'nav-item mock-start-btn';
-    mockBtn.textContent = '📝 모의고사로 풀기';
+    mockBtn.innerHTML = `${icon('pencil', 16)}모의고사로 풀기`;
     mockBtn.addEventListener('click', () => startMock(roundNode));
     li.appendChild(mockBtn);
     el.roundTree.appendChild(li);

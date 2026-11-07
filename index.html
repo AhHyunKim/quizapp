@@ -17,7 +17,7 @@
 
   <!-- ===== 상단 헤더 ===== -->
   <header class="app-header">
-    <button id="menuToggle" class="icon-btn only-mobile" aria-label="메뉴 열기">☰</button>
+    <button id="menuToggle" class="icon-btn only-mobile" aria-label="메뉴 열기"><span data-icon="menu"></span></button>
     <div class="brand">
       <span class="brand-mark">🚀</span>
       <span class="brand-name">공부하자~</span>
@@ -28,7 +28,7 @@
         <button id="modeExamBtn" class="mode-btn" type="button">기출문제</button>
       </div>
       <span id="syncStatus" class="sync-status" title="데이터 원본 상태">●</span>
-      <button id="darkToggle" class="icon-btn" aria-label="다크모드 전환">🌙</button>
+      <button id="darkToggle" class="icon-btn" aria-label="다크모드 전환"><span data-icon="moon"></span></button>
     </div>
   </header>
 
@@ -37,15 +37,15 @@
     <nav id="sidebar" class="sidebar">
       <ul class="nav-list">
         <li id="allLearningNavItem" class="subject-node root-node"></li>
-        <li><button class="nav-item" data-nav="review">📅 오늘의 복습 <span id="countReview" class="nav-count">0</span></button></li>
-        <li><button class="nav-item" data-nav="stats">🎯 통계</button></li>
+        <li><button class="nav-item" data-nav="review"><span data-icon="calendar-check"></span>오늘의 복습 <span id="countReview" class="nav-count">0</span></button></li>
+        <li><button class="nav-item" data-nav="stats"><span data-icon="chart-bar"></span>통계</button></li>
         <li class="subject-node">
-          <button class="nav-item" data-nav="wrong">🐸 오답노트 <span id="countWrong" class="nav-count">0</span></button>
+          <button class="nav-item" data-nav="wrong"><span data-icon="notes-x"></span>오답노트 <span id="countWrong" class="nav-count">0</span></button>
           <ul id="wrongScopeTree" class="subsubject-list" style="display:none"></ul>
         </li>
-        <li><button class="nav-item" data-nav="bookmark">🔖 북마크 <span id="countBookmark" class="nav-count">0</span></button></li>
-        <li><button class="nav-item" data-nav="favorite">⭐ 즐겨찾기 <span id="countFavorite" class="nav-count">0</span></button></li>
-        <li><button class="nav-item" data-nav="settings">⚙ 설정</button></li>
+        <li><button class="nav-item" data-nav="bookmark"><span data-icon="bookmark"></span>북마크 <span id="countBookmark" class="nav-count">0</span></button></li>
+        <li><button class="nav-item" data-nav="favorite"><span data-icon="star"></span>즐겨찾기 <span id="countFavorite" class="nav-count">0</span></button></li>
+        <li><button class="nav-item" data-nav="settings"><span data-icon="gear"></span>설정</button></li>
       </ul>
       <div class="nav-divider"></div>
       <div class="nav-label">과목별 학습</div>
@@ -84,24 +84,29 @@
 
       <!-- 퀴즈(문제풀이) 화면 -->
       <section id="view-quiz" class="view">
+        <div id="quizProgressWrap" class="progress-wrap">
+          <div id="quizProgressBar" class="progress-bar"></div>
+        </div>
+
         <div class="quiz-toolbar">
           <div id="quizBreadcrumb" class="breadcrumb">전체</div>
-          <div class="quiz-toolbar-actions">
-            <label class="shuffle-toggle">
-              <input type="checkbox" id="studyModeToggle" />
-              학습모드 (문제+정답 동시 표시)
-            </label>
-            <label class="shuffle-toggle">
-              <input type="checkbox" id="shuffleToggle" />
-              무작위 순서
-            </label>
-            <div class="goto-id-row">
-              <input type="text" id="gotoIdInput" placeholder="문제 ID로 이동" />
-              <button id="gotoIdBtn" class="btn btn-ghost btn-sm" type="button">이동</button>
-            </div>
-            <button id="finishRoundBtn" class="btn btn-ghost btn-sm">이번 회독 마감</button>
-            <details class="shortcut-help">
-              <summary>⌨ 단축키</summary>
+          <div id="quizProgressLabel" class="progress-label">0 / 0</div>
+          <details class="quiz-options">
+            <summary><span data-icon="sliders" data-size="18"></span>옵션</summary>
+            <div class="quiz-options-panel">
+              <label class="shuffle-toggle">
+                <input type="checkbox" id="studyModeToggle" />
+                학습모드 (문제+정답 동시 표시)
+              </label>
+              <label class="shuffle-toggle">
+                <input type="checkbox" id="shuffleToggle" />
+                무작위 순서
+              </label>
+              <div class="goto-id-row">
+                <input type="text" id="gotoIdInput" placeholder="문제 ID로 이동" />
+                <button id="gotoIdBtn" class="btn btn-ghost btn-sm" type="button">이동</button>
+              </div>
+              <button id="finishRoundBtn" class="btn btn-ghost btn-sm">이번 회독 마감</button>
               <table class="shortcut-table">
                 <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>이전 / 다음 문제</td></tr>
                 <tr><td><kbd>Space</kbd> <kbd>Enter</kbd></td><td>정답 보기 · 정답 확인</td></tr>
@@ -110,14 +115,9 @@
                 <tr><td><kbd>B</kbd> <kbd>F</kbd></td><td>북마크 / 즐겨찾기</td></tr>
                 <tr><td><kbd>Esc</kbd></td><td>입력칸 포커스 해제</td></tr>
               </table>
-            </details>
-          </div>
+            </div>
+          </details>
         </div>
-
-        <div id="quizProgressWrap" class="progress-wrap">
-          <div id="quizProgressBar" class="progress-bar"></div>
-        </div>
-        <div id="quizProgressLabel" class="progress-label">0 / 0</div>
 
         <div id="quizCardWrap" class="card-wrap">
           <!-- 카드 내용은 app.js 에서 렌더링 -->

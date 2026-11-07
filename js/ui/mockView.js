@@ -2,6 +2,7 @@
 // 기출 모의고사: 회차를 즉시 채점 없이 풀고 일괄 제출.
 
 import { state } from '../state.js';
+import { icon } from './icons.js';
 import { $, escapeHtml, toast } from './dom.js';
 import { renderNavCounts } from './sidebarView.js';
 import { beginLearning, explanationBlock, notifyGraduation, qcardPathLabel, startSession } from './quizView.js';
@@ -77,7 +78,7 @@ export function renderMock() {
   body.innerHTML = `
     <div class="mock-header">
       <div>
-        <div class="mock-title">📝 모의고사 · ${escapeHtml(mock.round)}</div>
+        <div class="mock-title">${icon('pencil', 20)}모의고사 · ${escapeHtml(mock.round)}</div>
         <div class="mock-meta">경과 <span id="mockTimer" class="mock-timer">00:00:00</span> · 답 <span id="mockAnswered"></span></div>
       </div>
       <div class="mock-header-actions">
@@ -172,7 +173,7 @@ export function renderMockResult() {
   $('#mockBody').innerHTML = `
     <div class="mock-header">
       <div>
-        <div class="mock-title">📝 모의고사 결과 · ${escapeHtml(mock.round)}</div>
+        <div class="mock-title">${icon('pencil', 20)}모의고사 결과 · ${escapeHtml(mock.round)}</div>
         <div class="mock-meta">소요 시간 ${formatElapsed(elapsedMs)}</div>
       </div>
     </div>

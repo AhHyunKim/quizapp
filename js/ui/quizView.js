@@ -2,6 +2,7 @@
 // 퀴즈 화면: 카드 렌더링(주관식/객관식), 세션 시작, 이동, 키보드 단축키, 스와이프.
 
 import { state, storage } from '../state.js';
+import { icon } from './icons.js';
 import { $, el, escapeHtml, sanitizeHtml, toast } from './dom.js';
 import { renderNavCounts } from './sidebarView.js';
 import { renderStats } from './statsView.js';
@@ -101,8 +102,8 @@ export function renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite)
         <span class="qcard-path">${qcardPathLabel(q)}${accuracy !== null ? ` · 누적 정답률 ${accuracy}%` : ''}</span>
         ${difficultyBadge(q)}
         <span class="qcard-tools">
-          <button class="qcard-icon-btn bookmark ${isBookmarked ? 'on' : ''}" id="bookmarkBtn" title="북마크">${isBookmarked ? '🏷️' : '🔖'}</button>
-          <button class="qcard-icon-btn favorite ${isFavorite ? 'on' : ''}" id="favoriteBtn" title="즐겨찾기">${isFavorite ? '🌟' : '⭐'}</button>
+          <button class="qcard-icon-btn bookmark ${isBookmarked ? 'on' : ''}" id="bookmarkBtn" title="북마크">${icon('bookmark', 22)}</button>
+          <button class="qcard-icon-btn favorite ${isFavorite ? 'on' : ''}" id="favoriteBtn" title="즐겨찾기">${icon('star', 22)}</button>
         </span>
       </div>
       <div class="qcard-question">${escapeHtml(q.question || '')}</div>
@@ -116,7 +117,7 @@ export function renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite)
 
       ${effectiveRevealed ? `
         <div class="qcard-answer-wrap">
-          <div class="qcard-answer-label">정답${isMatch ? ' <span class="qcard-match-tag">✓ 내 답과 일치</span>' : ''}</div>
+          <div class="qcard-answer-label">정답${isMatch ? ` <span class="qcard-match-tag">${icon('check', 14)}내 답과 일치</span>` : ''}</div>
           <div class="qcard-answer-text">${sanitizeHtml(q.answer || '')}</div>
         </div>
         ${explanationBlock(q)}
@@ -127,7 +128,7 @@ export function renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite)
           </div>
         ` : `
           <div class="qcard-actions">
-            <span class="qcard-graded-tag ${qs.lastResult ? 'correct' : 'wrong'}">${qs.lastResult ? '✓ 맞음으로 기록됨' : '🐸 오답으로 기록됨'}</span>
+            <span class="qcard-graded-tag ${qs.lastResult ? 'correct' : 'wrong'}">${qs.lastResult ? `${icon('check', 16)}맞음으로 기록됨` : `${icon('x', 16)}오답으로 기록됨`}</span>
           </div>
         `}
       ` : `
@@ -167,13 +168,13 @@ export function renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite)
     notifyGraduation(state.quiz.submitResult(true, state.currentMode));
     state.graded = true;
     renderNavCounts();
-    goNext();
+    goNext('correct');
   });
   if (gradeWrong) gradeWrong.addEventListener('click', () => {
     notifyGraduation(state.quiz.submitResult(false, state.currentMode));
     state.graded = true;
     renderNavCounts();
-    goNext();
+    goNext('wrong');
   });
 }
 
@@ -194,8 +195,8 @@ export function renderMultipleChoiceQuiz(q, qs, accuracy, isBookmarked, isFavori
         <span class="qcard-path">${qcardPathLabel(q)}${accuracy !== null ? ` · 누적 정답률 ${accuracy}%` : ''}</span>
         ${difficultyBadge(q)}
         <span class="qcard-tools">
-          <button class="qcard-icon-btn bookmark ${isBookmarked ? 'on' : ''}" id="bookmarkBtn" title="북마크">${isBookmarked ? '🏷️' : '🔖'}</button>
-          <button class="qcard-icon-btn favorite ${isFavorite ? 'on' : ''}" id="favoriteBtn" title="즐겨찾기">${isFavorite ? '🌟' : '⭐'}</button>
+          <button class="qcard-icon-btn bookmark ${isBookmarked ? 'on' : ''}" id="bookmarkBtn" title="북마크">${icon('bookmark', 22)}</button>
+          <button class="qcard-icon-btn favorite ${isFavorite ? 'on' : ''}" id="favoriteBtn" title="즐겨찾기">${icon('star', 22)}</button>
         </span>
       </div>
       <div class="qcard-question">${escapeHtml(q.question || '')}</div>
@@ -294,12 +295,20 @@ export function renderQuizCard() {
   }
 }
 
-export function goNext() {
-  if (state.quiz.hasNext()) { state.quiz.next(); resetCardState(); renderQuizCard(); }
+/** 새 카드가 나타날 때 짧은 전환 효과를 준다 (feedback: 직전 채점 결과 'correct' | 'wrong'). */
+function playCardEnter(feedback) {
+  const card = $('.qcard');
+  if (!card) return;
+  card.classList.add('enter');
+  if (feedback === 'correct' || feedback === 'wrong') card.classList.add(`feedback-${feedback}`);
+}
+
+export function goNext(feedback) {
+  if (state.quiz.hasNext()) { state.quiz.next(); resetCardState(); renderQuizCard(); playCardEnter(feedback); }
 }
 
 export function goPrev() {
-  if (state.quiz.hasPrev()) { state.quiz.prev(); resetCardState(); renderQuizCard(); }
+  if (state.quiz.hasPrev()) { state.quiz.prev(); resetCardState(); renderQuizCard(); playCardEnter(); }
 }
 
 export function qcardPathLabel(q) {
@@ -409,3 +418,9 @@ el.quizCardWrap.addEventListener('touchend', (e) => {
   const btn = dx < 0 ? el.nextBtn : el.prevBtn;
   if (!btn.disabled) btn.click();
 }, { passive: true });
+
+// 옵션 패널은 바깥을 누르면 닫는다.
+document.addEventListener('click', (e) => {
+  const panel = $('.quiz-options');
+  if (panel && panel.open && !panel.contains(e.target)) panel.open = false;
+});

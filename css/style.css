@@ -278,21 +278,30 @@ h1 { font-family: var(--font-serif); font-size: 32px; line-height: 1.25; margin:
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ===== 퀴즈 화면 ===== */
-.quiz-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 10px 14px; flex-wrap: wrap; }
-.breadcrumb { font-size: 15px; font-weight: 700; color: var(--ink); }
+.quiz-toolbar { display: flex; align-items: center; gap: 10px 14px; margin: 14px 0 18px; }
+.breadcrumb { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .quiz-toolbar-actions { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; }
 .shuffle-toggle { display: flex; align-items: center; gap: 7px; font-size: 14.5px; color: var(--ink-muted); cursor: pointer; white-space: nowrap; word-break: keep-all; }
 .shuffle-toggle input { accent-color: var(--accent); width: 16px; height: 16px; }
-.shortcut-help { position: relative; font-size: 14px; color: var(--ink-muted); }
-.shortcut-help summary { cursor: pointer; white-space: nowrap; user-select: none; }
-.shortcut-table {
-  position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 280px;
-  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 10px;
-  box-shadow: var(--shadow); padding: 8px 12px; border-collapse: separate; border-spacing: 0 4px; color: var(--ink);
+.quiz-options { position: relative; }
+.quiz-options > summary {
+  list-style: none; cursor: pointer; user-select: none; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px;
+  border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface);
+  font-size: 14.5px; color: var(--ink-muted);
 }
-.shortcut-table td { padding: 2px 6px; font-size: 13.5px; }
+.quiz-options > summary::-webkit-details-marker { display: none; }
+.quiz-options > summary:hover, .quiz-options[open] > summary { color: var(--ink); border-color: var(--accent); }
+.quiz-options-panel {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 20; width: min(340px, calc(100vw - 28px));
+  display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lift); padding: 16px;
+}
+.quiz-options-panel .shortcut-table { margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--border); width: 100%; border-collapse: separate; border-spacing: 0 4px; }
+.shortcut-table td { padding: 2px 6px 2px 0; font-size: 13.5px; color: var(--ink-muted); }
 .shortcut-table td:first-child { white-space: nowrap; }
-.shortcut-table kbd { font-family: var(--font-mono); font-size: 12px; padding: 1px 6px; border: 1px solid var(--border-strong); border-radius: 5px; background: var(--surface-tint); }
+.shortcut-table kbd { font-family: var(--font-mono); font-size: 12px; padding: 1px 6px; border: 1px solid var(--border-strong); border-radius: 5px; background: var(--surface-tint); color: var(--ink); }
 .goto-id-row { display: flex; align-items: center; gap: 6px; }
 .goto-id-row input[type="text"] {
   width: 140px; padding: 6px 10px; font-size: 14px; border-radius: 10px;
@@ -300,9 +309,9 @@ h1 { font-family: var(--font-serif); font-size: 32px; line-height: 1.25; margin:
 }
 .goto-id-row input[type="text"]:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
 
-.progress-wrap { height: 8px; background: var(--border); border-radius: 999px; overflow: hidden; }
+.progress-wrap { height: 4px; background: var(--border); border-radius: 999px; overflow: hidden; }
 .progress-bar { height: 100%; width: 0%; background: var(--accent); border-radius: 999px; transition: width 0.3s ease; }
-.progress-label { font-family: var(--font-mono); font-size: 12px; color: var(--ink-muted); margin: 8px 0 20px; text-align: right; }
+.progress-label { font-family: var(--font-mono); font-size: 13px; color: var(--ink-muted); white-space: nowrap; }
 
 .card-wrap { min-height: 300px; }
 
@@ -538,3 +547,38 @@ h1 { font-family: var(--font-serif); font-size: 32px; line-height: 1.25; margin:
 .mock-wrong-line { font-size: 15px; margin-top: 6px; }
 .mock-wrong-line.bad { color: var(--bad); }
 .mock-wrong-line.good { color: var(--good); font-weight: 700; }
+
+/* ===== SVG 아이콘 ===== */
+.ico { flex-shrink: 0; display: block; }
+.nav-item .ico { color: var(--ink-muted); }
+.nav-item.active .ico { color: var(--accent-strong); }
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; }
+.qcard-icon-btn { display: inline-flex; min-width: 44px; min-height: 44px; align-items: center; justify-content: center; padding: 0; }
+.qcard-icon-btn.on.bookmark .ico { fill: var(--accent); }
+.qcard-icon-btn.on.favorite .ico { fill: var(--gold); }
+.qcard-graded-tag, .qcard-match-tag { display: inline-flex; align-items: center; gap: 5px; }
+
+/* ===== 카드 위계 ===== */
+.qcard-path { background: none; padding: 0; font-weight: 500; color: var(--ink-muted); font-size: 13.5px; }
+.qcard-question { font-size: clamp(20px, 1.2vw + 16px, 25px); line-height: 1.7; letter-spacing: -0.01em; margin: 10px 0 24px; }
+.qcard-answer-label { font-size: 13px; letter-spacing: 0; }
+.grade-btn { min-height: 52px; }
+.option-btn { min-height: 48px; }
+
+/* ===== 정답: 형광펜이 지나가는 순간 =====
+   이 앱에서 움직이는 건 정답이 열릴 때와 채점 직후뿐. 나머지는 조용히 둔다. */
+@keyframes marker-sweep { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes card-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes feedback-good { from { box-shadow: 0 0 0 4px var(--good), var(--shadow); } to { box-shadow: 0 0 0 4px transparent, var(--shadow); } }
+@keyframes feedback-bad { from { box-shadow: 0 0 0 4px var(--bad), var(--shadow); } to { box-shadow: 0 0 0 4px transparent, var(--shadow); } }
+@keyframes option-pop { 0% { transform: scale(0.98); } 60% { transform: scale(1.01); } 100% { transform: none; } }
+.qcard-answer-wrap { animation: marker-sweep 0.38s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.qcard.enter { animation: card-enter 0.22s ease-out; }
+.qcard.enter.feedback-correct { animation: card-enter 0.22s ease-out, feedback-good 0.7s ease-out; }
+.qcard.enter.feedback-wrong { animation: card-enter 0.22s ease-out, feedback-bad 0.7s ease-out; }
+.option-btn.correct, .option-btn.wrong { animation: option-pop 0.28s ease-out; }
+
+@media (max-width: 520px) {
+  .quiz-options-panel .shortcut-table { display: none; }
+  .quiz-toolbar { gap: 8px; }
+}
