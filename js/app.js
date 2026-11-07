@@ -1127,6 +1127,49 @@ el.resetDataBtn.addEventListener('click', () => {
 });
 
 // ---------------------------------------------------------------------------
+// 키보드 단축키 (해당 버튼의 click()을 호출해 로직을 중복하지 않는다)
+// ---------------------------------------------------------------------------
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (!$('#view-quiz').classList.contains('active') || !quiz) return;
+
+  const active = document.activeElement;
+  const tag = active ? active.tagName : '';
+  const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (active && active.isContentEditable);
+  if (typing) {
+    if (e.key === 'Escape') active.blur();
+    return;
+  }
+
+  const clickIf = (selector) => {
+    const btn = $(selector);
+    if (!btn || btn.disabled) return false;
+    btn.click();
+    return true;
+  };
+  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  let handled = false;
+  // 버튼에 포커스가 남아 있으면 Space/Enter가 브라우저 기본 클릭을 한 번 더 일으키므로 먼저 해제한다.
+  if ((key === ' ' || key === 'Enter') && tag === 'BUTTON') active.blur();
+
+  if (key === 'ArrowRight') handled = clickIf('#nextBtn');
+  else if (key === 'ArrowLeft') handled = clickIf('#prevBtn');
+  else if (key === ' ' || key === 'Enter') {
+    handled = clickIf('#revealBtn') || (selectedOption > 0 && clickIf('#confirmBtn'));
+  }
+  else if (key === 'b') handled = clickIf('#bookmarkBtn');
+  else if (key === 'f') handled = clickIf('#favoriteBtn');
+  else if (/^[1-5]$/.test(key)) {
+    if ($('#gradeCorrect')) {
+      if (key === '1') handled = clickIf('#gradeCorrect');
+      else if (key === '2') handled = clickIf('#gradeWrong');
+    } else handled = clickIf(`.option-btn[data-option="${key}"]`);
+  }
+
+  if (handled) e.preventDefault();
+});
+
+// ---------------------------------------------------------------------------
 // 초기화
 // ---------------------------------------------------------------------------
 (async function init() {

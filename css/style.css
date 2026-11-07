@@ -283,6 +283,16 @@ h1 { font-family: var(--font-serif); font-size: 32px; line-height: 1.25; margin:
 .quiz-toolbar-actions { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; }
 .shuffle-toggle { display: flex; align-items: center; gap: 7px; font-size: 14.5px; color: var(--ink-muted); cursor: pointer; white-space: nowrap; word-break: keep-all; }
 .shuffle-toggle input { accent-color: var(--accent); width: 16px; height: 16px; }
+.shortcut-help { position: relative; font-size: 14px; color: var(--ink-muted); }
+.shortcut-help summary { cursor: pointer; white-space: nowrap; user-select: none; }
+.shortcut-table {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 280px;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 10px;
+  box-shadow: var(--shadow); padding: 8px 12px; border-collapse: separate; border-spacing: 0 4px; color: var(--ink);
+}
+.shortcut-table td { padding: 2px 6px; font-size: 13.5px; }
+.shortcut-table td:first-child { white-space: nowrap; }
+.shortcut-table kbd { font-family: var(--font-mono); font-size: 12px; padding: 1px 6px; border: 1px solid var(--border-strong); border-radius: 5px; background: var(--surface-tint); }
 .goto-id-row { display: flex; align-items: center; gap: 6px; }
 .goto-id-row input[type="text"] {
   width: 140px; padding: 6px 10px; font-size: 14px; border-radius: 10px;
