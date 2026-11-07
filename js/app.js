@@ -666,12 +666,18 @@ function updateProgress() {
   el.nextBtn.disabled = !quiz.hasNext();
 }
 
+/** 내 답과 정답이 일치하는지 (공백 제거 후 비교, 정답이 HTML이면 태그 제거) */
+function isAnswerMatch(draft, answer) {
+  const norm = (v) => String(v || '').replace(/<[^>]*>/g, '').replace(/\s+/g, '');
+  const d = norm(draft);
+  return d.length > 0 && d === norm(answer);
+}
+
 function renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
   const studyMode = el.studyModeToggle.checked;
   const effectiveRevealed = revealed || studyMode;
   const showAnswerInput = !studyMode;
-  const isMatch = studyMode && myAnswerDraft.trim().length > 0
-    && myAnswerDraft.trim().replace(/\s+/g, '') === String(q.answer || '').trim().replace(/\s+/g, '');
+  const isMatch = isAnswerMatch(myAnswerDraft, q.answer);
 
   el.quizCardWrap.innerHTML = `
     <div class="qcard">
@@ -687,13 +693,13 @@ function renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
       ${showAnswerInput ? `
         <div class="qcard-input-wrap">
           <div class="qcard-answer-label">내 답 적어보기</div>
-          <textarea id="myAnswerInput" class="qcard-input ${isMatch ? 'match' : ''}" rows="2" placeholder="정답을 보기 전에 먼저 답을 적어보세요">${escapeHtml(myAnswerDraft)}</textarea>
+          <textarea id="myAnswerInput" class="qcard-input ${isMatch ? 'match' : ''}" rows="2" ${effectiveRevealed ? 'readonly' : ''} placeholder="정답을 보기 전에 먼저 답을 적어보세요">${escapeHtml(myAnswerDraft)}</textarea>
         </div>
       ` : ''}
 
       ${effectiveRevealed ? `
         <div class="qcard-answer-wrap">
-          <div class="qcard-answer-label">정답</div>
+          <div class="qcard-answer-label">정답${isMatch ? ' <span class="qcard-match-tag">✓ 내 답과 일치</span>' : ''}</div>
           <div class="qcard-answer-text">${q.answer || ''}</div>
         </div>
         ${!graded ? `
@@ -730,9 +736,7 @@ function renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
   if (myAnswerInput) {
     myAnswerInput.addEventListener('input', (e) => {
       myAnswerDraft = e.target.value;
-      const nowMatch = myAnswerDraft.trim().length > 0
-        && myAnswerDraft.trim().replace(/\s+/g, '') === String(q.answer || '').trim().replace(/\s+/g, '');
-      myAnswerInput.classList.toggle('match', nowMatch);
+      myAnswerInput.classList.toggle('match', isAnswerMatch(myAnswerDraft, q.answer));
     });
   }
 
