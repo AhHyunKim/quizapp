@@ -14,8 +14,19 @@ js/storageManager.js  LocalStorage 기반 사용자 학습 데이터 (저장 계
 js/menuBuilder.js     과목/소과목 → 메뉴 트리 생성
 js/quizEngine.js      문제풀이 세션(순서/진행/채점) 관리
 js/statsManager.js    저장된 데이터를 통계용으로 집계
-js/app.js             위 모듈들을 화면(DOM)에 연결하는 컨트롤러
-data/sample.csv       테스트용 샘플 문제 (업로드해 주신 파일)
+js/reviewScheduler.js 오늘의 복습 대상 계산 (순수 함수)
+js/questionNormalizer.js  시트 행 → 화면용 Question 정규화 (보기 파싱, 기출 변환)
+js/dataLoading.js     문제 불러오기(시트/샘플/CSV)와 초기 화면 구성
+js/state.js           앱 전체 공유 상태와 서비스 인스턴스
+js/app.js             진입점: 화면 전환(navigate), 모드 전환, 초기화
+js/ui/dom.js          $ 헬퍼, el 맵, toast, escapeHtml/sanitizeHtml, 테마/글꼴
+js/ui/quizView.js     퀴즈 카드 렌더링, 세션, 키보드 단축키, 스와이프
+js/ui/sidebarView.js  과목/회차/오답 범위 트리, 메뉴 카운트
+js/ui/statsView.js    통계 화면
+js/ui/settingsView.js 설정 화면 이벤트
+js/ui/mockView.js     기출 모의고사
+data/sample.csv       테스트용 샘플 문제 (빈출문제 모드)
+data/exam-sample.csv  테스트용 샘플 문제 (기출문제 모드, 보기 4개 이상)
 ```
 
 기능별로 파일이 분리되어 있어, 예를 들어 "정답 채점 방식"을 바꾸고 싶으면 `quizEngine.js`만,
@@ -47,6 +58,15 @@ python3 -m http.server 8000
 시트가 아직 없다면 **설정 → 로컬 CSV로 대신 불러오기**에서 "번들 샘플 데이터 불러오기"로 먼저
 동작을 확인해 볼 수 있습니다.
 
+## 배포 (GitHub Pages)
+
+이 앱은 빌드 없이 정적 파일 그대로 동작하므로, 저장소를 GitHub Pages(브랜치 배포)로 연결해 두면
+`main`에 push할 때마다 사이트가 갱신됩니다. 주소는 `https://<GitHub 계정>.github.io/quizapp/` 형태입니다.
+
+- 앱 파일(`index.html`, `css/`, `js/`)을 수정해 배포할 때는 `sw.js`의 `CACHE_VERSION`을 올려야 설치한 기기에 새 파일이 반영됩니다.
+- `js/` 아래에 새 파일을 추가하면 `sw.js`의 `SHELL_FILES`에도 넣어 주세요.
+- 학습 기록은 브라우저(주소)별로 따로 저장되므로, 기기를 옮길 때는 설정의 "학습기록 내보내기/가져오기"를 쓰세요.
+
 ## 데이터 분리 원칙
 
 - **문제 데이터** (Google Sheets): ID/과목/소과목/문제/정답 등. 앱 내부에 저장하지 않고 매번 원본에서 불러옵니다.
@@ -54,16 +74,19 @@ python3 -m http.server 8000
   회독별 점수, 과목별 통계, 마지막 학습 위치, 다크모드 설정. 전부 **문제 ID 기준**으로 저장되므로 시트에서
   문제 순서가 바뀌거나 새 문제가 추가돼도 기존 기록이 깨지지 않습니다.
 
-## 향후 컬럼 확장 (난이도/해설/보기1~5/이미지 URL 등)
+## 선택 컬럼 (해설 / 난이도)
 
-`dataLoader.js`의 `parseQuestion()`은 시트의 모든 컬럼을 헤더명 그대로 Question 객체에 실어 보냅니다.
-즉 시트에 `해설`, `난이도`, `이미지URL` 같은 컬럼을 추가해도 **데이터 로딩 코드는 수정할 필요가 없습니다.**
-다만 그 값을 화면에 "표시"하려면 `app.js`의 `renderQuizCard()`에서 원하는 위치에 한 줄 추가해 주면 됩니다.
-예:
+필수 5개 컬럼(`ID, 과목, 소과목, 문제, 정답`) 뒤에 아래 컬럼을 추가하면 화면에 자동으로 표시됩니다.
+컬럼이 없거나 값이 비어 있으면 아무것도 표시하지 않으므로 기존 시트도 그대로 동작합니다.
 
-```js
-${q.해설 ? `<div class="qcard-answer-label">해설</div><div>${escapeHtml(q.해설)}</div>` : ''}
-```
+| 헤더 | 표시 위치 |
+|---|---|
+| `해설` (또는 `explanation`) | 정답이 공개되면 정답 아래 "해설" 블록 (정답과 같이 HTML/수식 `$...$` 지원, sanitize 적용) |
+| `난이도` (또는 `difficulty`) | 카드 상단의 작은 배지 |
+
+`dataLoader.js`의 `parseQuestion()`은 시트의 모든 컬럼을 헤더명 그대로 Question 객체에 실어 보내므로,
+`이미지URL` 같은 다른 컬럼도 로딩 코드 수정 없이 읽을 수 있습니다. 화면에 표시하려면
+`app.js`의 `renderShortAnswerQuiz()`에서 원하는 위치에 한 줄 추가하면 됩니다.
 
 ## 기술 메모
 

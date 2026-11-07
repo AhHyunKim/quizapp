@@ -4,6 +4,10 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>빈출문제 카드 — 문제풀이</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#14203b" />
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png" />
+<link rel="apple-touch-icon" href="img/favicon-180.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -15,7 +19,7 @@
 
   <!-- ===== 상단 헤더 ===== -->
   <header class="app-header">
-    <button id="menuToggle" class="icon-btn only-mobile" aria-label="메뉴 열기">☰</button>
+    <button id="menuToggle" class="icon-btn only-mobile" aria-label="메뉴 열기"><span data-icon="menu"></span></button>
     <div class="brand">
       <span class="brand-mark">🚀</span>
       <span class="brand-name">공부하자~</span>
@@ -26,35 +30,50 @@
         <button id="modeExamBtn" class="mode-btn" type="button">기출문제</button>
       </div>
       <span id="syncStatus" class="sync-status" title="데이터 원본 상태">●</span>
-      <button id="darkToggle" class="icon-btn" aria-label="다크모드 전환">🌙</button>
+      <button id="darkToggle" class="icon-btn" aria-label="다크모드 전환"><span data-icon="moon"></span></button>
     </div>
   </header>
 
   <div class="app-body">
     <!-- ===== 사이드바 ===== -->
-    <nav id="sidebar" class="sidebar">
-      <ul class="nav-list">
-        <li id="allLearningNavItem" class="subject-node root-node"></li>
-        <li><button class="nav-item" data-nav="stats">🎯 통계</button></li>
-        <li class="subject-node">
-          <button class="nav-item" data-nav="wrong">🐸 오답노트 <span id="countWrong" class="nav-count">0</span></button>
-          <ul id="wrongScopeTree" class="subsubject-list" style="display:none"></ul>
-        </li>
-        <li><button class="nav-item" data-nav="bookmark">🔖 북마크 <span id="countBookmark" class="nav-count">0</span></button></li>
-        <li><button class="nav-item" data-nav="favorite">⭐ 즐겨찾기 <span id="countFavorite" class="nav-count">0</span></button></li>
-        <li><button class="nav-item" data-nav="settings">⚙ 설정</button></li>
-      </ul>
-      <div class="nav-divider"></div>
-      <div class="nav-label">과목별 학습</div>
-      <ul id="subjectTree" class="subject-tree">
-        <!-- MenuBuilder 가 여기 동적으로 채움 -->
-      </ul>
+    <nav id="sidebar" class="sidebar" aria-label="메뉴">
+      <div class="nav-group nav-today">
+        <div class="nav-label">오늘 할 것</div>
+        <ul class="nav-list">
+          <li><button class="nav-item" data-nav="review"><span data-icon="calendar-check"></span>오늘의 복습 <span id="countReview" class="nav-count">0</span></button></li>
+          <li class="subject-node">
+            <button class="nav-item" data-nav="wrong"><span data-icon="notes-x"></span>오답노트 <span id="countWrong" class="nav-count">0</span></button>
+            <ul id="wrongScopeTree" class="subsubject-list" style="display:none"></ul>
+          </li>
+        </ul>
+      </div>
 
-      <div id="roundNavSection" style="display:none">
-        <div class="nav-divider"></div>
-        <div id="roundLabel" class="nav-label">회차별 (기출문제)</div>
+      <div class="nav-group">
+        <div class="nav-label">풀 범위</div>
+        <ul id="subjectTree" class="subject-tree">
+          <!-- 전체 + 과목/소과목: sidebarView.js 가 시트 내용으로 채움 -->
+        </ul>
+      </div>
+
+      <div id="roundNavSection" class="nav-group" style="display:none">
+        <div id="roundLabel" class="nav-label">회차 (기출문제)</div>
         <ul id="roundTree" class="subject-tree">
-          <!-- 기출문제의 "회차" 컬럼 기준으로 app.js 가 여기 동적으로 채움 -->
+          <!-- 기출문제의 "회차" 컬럼 기준으로 sidebarView.js 가 채움 -->
+        </ul>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label">저장한 것</div>
+        <ul class="nav-list">
+          <li><button class="nav-item" data-nav="bookmark"><span data-icon="bookmark"></span>북마크 <span id="countBookmark" class="nav-count">0</span></button></li>
+          <li><button class="nav-item" data-nav="favorite"><span data-icon="star"></span>즐겨찾기 <span id="countFavorite" class="nav-count">0</span></button></li>
+        </ul>
+      </div>
+
+      <div class="nav-group nav-foot">
+        <ul class="nav-list">
+          <li><button class="nav-item" data-nav="stats"><span data-icon="chart-bar"></span>통계</button></li>
+          <li><button class="nav-item" data-nav="settings"><span data-icon="gear"></span>설정</button></li>
         </ul>
       </div>
     </nav>
@@ -81,29 +100,40 @@
 
       <!-- 퀴즈(문제풀이) 화면 -->
       <section id="view-quiz" class="view">
-        <div class="quiz-toolbar">
-          <div id="quizBreadcrumb" class="breadcrumb">전체</div>
-          <div class="quiz-toolbar-actions">
-            <label class="shuffle-toggle">
-              <input type="checkbox" id="studyModeToggle" />
-              학습모드 (문제+정답 동시 표시)
-            </label>
-            <label class="shuffle-toggle">
-              <input type="checkbox" id="shuffleToggle" />
-              무작위 순서
-            </label>
-            <div class="goto-id-row">
-              <input type="text" id="gotoIdInput" placeholder="문제 ID로 이동" />
-              <button id="gotoIdBtn" class="btn btn-ghost btn-sm" type="button">이동</button>
-            </div>
-            <button id="finishRoundBtn" class="btn btn-ghost btn-sm">이번 회독 마감</button>
-          </div>
-        </div>
-
         <div id="quizProgressWrap" class="progress-wrap">
           <div id="quizProgressBar" class="progress-bar"></div>
         </div>
-        <div id="quizProgressLabel" class="progress-label">0 / 0</div>
+
+        <div class="quiz-toolbar">
+          <div id="quizBreadcrumb" class="breadcrumb">전체</div>
+          <div id="quizProgressLabel" class="progress-label">0 / 0</div>
+          <details class="quiz-options">
+            <summary><span data-icon="sliders" data-size="18"></span>옵션</summary>
+            <div class="quiz-options-panel">
+              <label class="shuffle-toggle">
+                <input type="checkbox" id="studyModeToggle" />
+                학습모드 (문제+정답 동시 표시)
+              </label>
+              <label class="shuffle-toggle">
+                <input type="checkbox" id="shuffleToggle" />
+                무작위 순서
+              </label>
+              <div class="goto-id-row">
+                <input type="text" id="gotoIdInput" placeholder="문제 ID로 이동" />
+                <button id="gotoIdBtn" class="btn btn-ghost btn-sm" type="button">이동</button>
+              </div>
+              <button id="finishRoundBtn" class="btn btn-ghost btn-sm">이번 회독 마감</button>
+              <table class="shortcut-table">
+                <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>이전 / 다음 문제</td></tr>
+                <tr><td><kbd>Space</kbd> <kbd>Enter</kbd></td><td>정답 보기 · 정답 확인</td></tr>
+                <tr><td><kbd>1</kbd> <kbd>2</kbd></td><td>맞았어요 / 틀렸어요 (정답 공개 후)</td></tr>
+                <tr><td><kbd>1</kbd>~<kbd>5</kbd></td><td>보기 선택 (객관식)</td></tr>
+                <tr><td><kbd>B</kbd> <kbd>F</kbd></td><td>북마크 / 즐겨찾기</td></tr>
+                <tr><td><kbd>Esc</kbd></td><td>입력칸 포커스 해제</td></tr>
+              </table>
+            </div>
+          </details>
+        </div>
 
         <div id="quizCardWrap" class="card-wrap">
           <!-- 카드 내용은 app.js 에서 렌더링 -->
@@ -115,11 +145,19 @@
         </div>
       </section>
 
+      <!-- 모의고사 화면 (기출문제 회차를 시험처럼 풀기) -->
+      <section id="view-mock" class="view">
+        <div id="mockBody"></div>
+      </section>
+
       <!-- 통계 화면 -->
       <section id="view-stats" class="view">
         <p class="eyebrow">학습 현황</p>
         <h1>통계</h1>
         <div id="overviewGrid" class="overview-grid"></div>
+
+        <h2 class="section-title">학습 잔디 (최근 12주)</h2>
+        <div id="heatmap" class="chart-card"></div>
 
         <h2 class="section-title">과목별 정답률</h2>
         <div id="subjectStatsTable" class="subject-stats"></div>
@@ -129,6 +167,7 @@
           <label for="roundScopeSelect">구간</label>
           <select id="roundScopeSelect"></select>
         </div>
+        <div id="roundChart" class="chart-card"></div>
         <div id="roundTable" class="round-table"></div>
       </section>
 
@@ -209,10 +248,26 @@
               <option value="d2coding">D2Coding (코딩 폰트)</option>
             </select>
           </div>
+          <div class="settings-row">
+            <label for="graduateStreakInput">오답노트 졸업 기준 (연속 정답 수)</label>
+            <input id="graduateStreakInput" type="number" min="1" max="5" step="1" value="2" />
+          </div>
+          <p class="settings-desc">오답노트에 있는 문제를 이 횟수만큼 연속으로 맞히면 오답노트에서 자동으로 빠집니다.</p>
+        </div>
+
+        <div class="settings-block">
+          <h3>6. 학습기록 백업 / 복원</h3>
+          <p class="settings-desc">오답노트, 북마크, 통계, 회독 기록과 설정을 JSON 파일로 저장하거나, 저장해 둔 파일로 되돌립니다. 다른 기기로 옮길 때도 쓸 수 있습니다.</p>
+          <div class="settings-row">
+            <button id="exportBackupBtn" class="btn" type="button">학습기록 내보내기</button>
+            <button id="importBackupBtn" class="btn" type="button">학습기록 가져오기</button>
+            <input id="importBackupInput" type="file" accept=".json,application/json" hidden />
+          </div>
+          <p id="backupStatus" class="settings-status"></p>
         </div>
 
         <div class="settings-block danger">
-          <h3>6. 학습기록 초기화</h3>
+          <h3>7. 학습기록 초기화</h3>
           <p class="settings-desc">오답노트/북마크/즐겨찾기/통계/회독 기록을 모두 삭제합니다. 문제 데이터(Google Sheets)에는 영향이 없습니다.</p>
           <button id="resetDataBtn" class="btn btn-danger">학습기록 전체 삭제</button>
         </div>
@@ -224,6 +279,7 @@
 
 <div id="toast" class="toast"></div>
 <!-- 👇 여기부터 추가: 수식 렌더링용 KaTeX 스크립트 -->
+<script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
 <!-- 👆 여기까지 추가 -->

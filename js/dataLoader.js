@@ -12,7 +12,20 @@ const HEADER_ALIAS = {
   문제: 'question',
   정답: 'answer',
   회차: 'round',
+  해설: 'explanation',
+  Explanation: 'explanation',
+  난이도: 'difficulty',
+  Difficulty: 'difficulty',
 };
+
+// 필수 헤더와 허용하는 별칭 (비교는 소문자 기준)
+const REQUIRED_HEADERS = [
+  { label: 'ID', names: ['id'] },
+  { label: '과목', names: ['과목', 'subject'] },
+  { label: '소과목', names: ['소과목', 'subsubject'] },
+  { label: '문제', names: ['문제', 'question'] },
+  { label: '정답', names: ['정답', 'answer', '정답번호', '답', 'correct', 'correctanswer'] },
+];
 
 /**
  * 따옴표로 감싼 필드(콤마/개행/이스케이프된 "" 포함)를 지원하는 CSV 파서.
@@ -91,13 +104,22 @@ export default class DataLoader {
 
   /** 임의의 CSV URL(정적 호스팅 파일 등)로부터 불러온다. */
   async loadFromCSVUrl(url) {
-    const res = await fetch(url, { cache: 'no-store' });
+    let res;
+    try {
+      res = await fetch(url, { cache: 'no-store' });
+    } catch (e) {
+      throw new Error('네트워크에 연결하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.');
+    }
     if (!res.ok) {
       throw new Error(
         `데이터를 불러오지 못했습니다 (status ${res.status}). Google Sheets의 "웹에 게시" 또는 공유 설정을 확인해 주세요.`
       );
     }
     const text = await res.text();
+    // 게시/공유가 안 된 시트는 CSV 대신 로그인 페이지 같은 HTML을 돌려준다.
+    if (/^\s*<(!doctype|html)/i.test(text)) {
+      throw new Error('시트가 CSV 대신 웹페이지로 응답했습니다. "웹에 게시"를 했는지, 공유가 "링크가 있는 모든 사용자 보기 가능"인지 확인해 주세요.');
+    }
     return this.loadFromCSV(text);
   }
 
@@ -107,6 +129,15 @@ export default class DataLoader {
     return this.loadFromCSV(text);
   }
 
+  /** 필수 헤더(ID/과목/소과목/문제/정답)가 모두 있는지 확인하고, 빠진 이름을 알려준다. */
+  assertRequiredHeaders(headers) {
+    const have = new Set(headers.map((h) => h.toLowerCase()));
+    const missing = REQUIRED_HEADERS.filter((r) => !r.names.some((n) => have.has(n))).map((r) => r.label);
+    if (missing.length) {
+      throw new Error(`필수 헤더가 없습니다: ${missing.join(', ')}. 첫 행을 ID, 과목, 소과목, 문제, 정답 순서로 맞춰 주세요.`);
+    }
+  }
+
   /** CSV 원문 텍스트를 Question[] 로 변환한다. */
   loadFromCSV(csvText) {
     const rows = parseCSV(csvText.replace(/^\uFEFF/, ''));
@@ -114,6 +145,7 @@ export default class DataLoader {
 
     const headers = rows[0].map((h) => h.trim());
     this.headers = headers;
+    this.assertRequiredHeaders(headers);
 
     const questions = [];
     for (let i = 1; i < rows.length; i++) {

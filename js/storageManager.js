@@ -11,6 +11,7 @@ const KEYS = {
   ROUND_SCORES: 'qa_round_scores_v1',
   SUBJECT_STATS: 'qa_subject_stats_v1',
   LAST_POSITION: 'qa_last_position_v1',
+  DAILY_LOG: 'qa_daily_log_v1', // { "YYYY-MM-DD": 그날 푼 문제 수 }
 };
 
 // 여기에 Apps Script 배포 URL(.../exec)을 채워두면, 설정 화면에서 아무것도 입력하지 않아도
@@ -47,6 +48,11 @@ export default class StorageManager {
   // ---- 설정 (다크모드, 시트 URL 등) ----
   getSettings(mode = 'default') {
     return this._read(this._modeKey(KEYS.SETTINGS, mode), { darkMode: false, sheetUrl: '', font: 'default', syncUrl: '', syncSheetUrl: '' });
+  }
+  /** 오답노트 졸업 기준: 오답노트에 있는 문제를 연속으로 몇 번 맞히면 제거할지 (1~5, 기본 2). */
+  getGraduateStreak(mode = 'default') {
+    const n = Number(this.getSettings(mode).graduateStreak);
+    return Number.isFinite(n) && n >= 1 ? Math.min(5, Math.floor(n)) : 2;
   }
   setSettings(patch, mode = 'default') {
     const merged = { ...this.getSettings(mode), ...patch };
@@ -162,6 +168,7 @@ export default class StorageManager {
         correct,
         lastResult: r.lastResult === '정답',
         lastAt: r.lastAt ? new Date(r.lastAt).getTime() : undefined,
+        streak: Number(r.streak) || 0,
       };
       if (r.wrong === 'O') wrong.push(r.id);
       if (r.bookmark === 'O') bookmarks.push(r.id);
@@ -230,15 +237,21 @@ export default class StorageManager {
     const s = stats[id] || { attempts: 0, correct: 0 };
     s.attempts += 1;
     if (correct) s.correct += 1;
+    // 연속 정답 수 (기존 기록에는 없으므로 0으로 간주)
+    s.streak = correct ? (s.streak || 0) + 1 : 0;
     s.lastResult = correct;
     s.lastAt = Date.now();
     stats[id] = s;
     this._write(this._modeKey(KEYS.QUESTION_STATS, mode), stats);
 
-    // 오답노트는 "마지막 결과가 오답인 문제" 목록으로 자동 유지
+    // 오답노트: 오답이면 추가, 연속 N회 정답이면 졸업(제거)
     let wrong = this._getList(KEYS.WRONG, mode);
+    let graduated = false;
     if (correct) {
-      wrong = wrong.filter((x) => x !== id);
+      if (wrong.includes(id) && s.streak >= this.getGraduateStreak(mode)) {
+        wrong = wrong.filter((x) => x !== id);
+        graduated = true;
+      }
     } else if (!wrong.includes(id)) {
       wrong.push(id);
     }
@@ -253,9 +266,22 @@ export default class StorageManager {
       this._write(this._modeKey(KEYS.SUBJECT_STATS, mode), subStats);
     }
 
-    this._syncPush(mode, { type: 'answer', id, subject, subSubject, correct });
-    return s;
+    this._bumpDailyLog(mode);
+
+    this._syncPush(mode, { type: 'answer', id, subject, subSubject, correct, streak: s.streak, graduated });
+    return { ...s, graduated };
   }
+
+  // ---- 일별 풀이 수 (학습 잔디용) ----
+  _bumpDailyLog(mode = 'default') {
+    const log = this._read(this._modeKey(KEYS.DAILY_LOG, mode), {});
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    log[key] = (log[key] || 0) + 1;
+    this._write(this._modeKey(KEYS.DAILY_LOG, mode), log);
+  }
+  getDailyLog(mode = 'default') { return this._read(this._modeKey(KEYS.DAILY_LOG, mode), {}); }
 
   getQuestionStats(id, mode = 'default') {
     const stats = this._read(this._modeKey(KEYS.QUESTION_STATS, mode), {});
@@ -287,6 +313,40 @@ export default class StorageManager {
   // ---- 마지막 학습 위치 ----
   getLastPosition(mode = 'default') { return this._read(this._modeKey(KEYS.LAST_POSITION, mode), null); }
   setLastPosition(pos, mode = 'default') { this._write(this._modeKey(KEYS.LAST_POSITION, mode), pos); }
+
+  // ---- 백업 / 복원 (qa_ 로 시작하는 LocalStorage 키 전체) ----
+  exportAll() {
+    const data = {};
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('qa_')) data[key] = localStorage.getItem(key);
+    }
+    return { version: 1, exportedAt: new Date().toISOString(), data };
+  }
+
+  /** 백업 객체가 올바른 형식이면 null, 아니면 오류 메시지를 돌려준다. */
+  validateBackup(backup) {
+    if (!backup || typeof backup !== 'object' || backup.version !== 1) return '학습기록 백업 파일이 아니거나 지원하지 않는 버전입니다.';
+    const data = backup.data;
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return '백업 파일에 데이터가 없습니다.';
+    const keys = Object.keys(data);
+    if (!keys.length) return '백업 파일에 저장된 기록이 없습니다.';
+    if (keys.some((k) => !k.startsWith('qa_') || typeof data[k] !== 'string')) return '백업 파일의 형식이 올바르지 않습니다.';
+    return null;
+  }
+
+  /** 현재 qa_ 키를 모두 지우고 백업 내용으로 덮어쓴다. 저장한 키 개수를 반환한다. */
+  importAll(backup) {
+    const existing = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('qa_')) existing.push(key);
+    }
+    existing.forEach((key) => localStorage.removeItem(key));
+    const keys = Object.keys(backup.data);
+    keys.forEach((key) => localStorage.setItem(key, backup.data[key]));
+    return keys.length;
+  }
 
   // ---- 전체 초기화 (설정 화면의 "학습기록 초기화" 용) ----
   clearAllUserData() {

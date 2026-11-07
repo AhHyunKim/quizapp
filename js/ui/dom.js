@@ -1,0 +1,121 @@
+// ui/dom.js
+// DOM 헬퍼: $ 선택자, 요소 맵(el), 토스트, 테마/글꼴 적용, HTML escape/sanitize.
+
+import { icon, hydrateIcons } from './icons.js';
+
+export const $ = (sel) => document.querySelector(sel);
+
+export const el = {
+  sidebar: $('#sidebar'),
+  sidebarScrim: $('#sidebarScrim'),
+  menuToggle: $('#menuToggle'),
+  darkToggle: $('#darkToggle'),
+  darkToggleSettings: $('#darkToggleSettings'),
+  fontSelect: $('#fontSelect'),
+  graduateStreakInput: $('#graduateStreakInput'),
+  syncStatus: $('#syncStatus'),
+  subjectTree: $('#subjectTree'),
+  roundNavSection: $('#roundNavSection'),
+  roundLabel: $('#roundLabel'),
+  roundTree: $('#roundTree'),
+  countWrong: $('#countWrong'),
+  countBookmark: $('#countBookmark'),
+  countReview: $('#countReview'),
+  countFavorite: $('#countFavorite'),
+  wrongScopeTree: $('#wrongScopeTree'),
+
+  quizBreadcrumb: $('#quizBreadcrumb'),
+  studyModeToggle: $('#studyModeToggle'),
+  shuffleToggle: $('#shuffleToggle'),
+  gotoIdInput: $('#gotoIdInput'),
+  gotoIdBtn: $('#gotoIdBtn'),
+  finishRoundBtn: $('#finishRoundBtn'),
+  quizProgressBar: $('#quizProgressBar'),
+  quizProgressLabel: $('#quizProgressLabel'),
+  quizCardWrap: $('#quizCardWrap'),
+  prevBtn: $('#prevBtn'),
+  nextBtn: $('#nextBtn'),
+
+  overviewGrid: $('#overviewGrid'),
+  subjectStatsTable: $('#subjectStatsTable'),
+  roundScopeSelect: $('#roundScopeSelect'),
+  roundTable: $('#roundTable'),
+  roundChart: $('#roundChart'),
+  heatmap: $('#heatmap'),
+
+  sheetUrlInput: $('#sheetUrlInput'),
+  sheetUrlSave: $('#sheetUrlSave'),
+  sheetUrlStatus: $('#sheetUrlStatus'),
+  examSheetUrlInput: $('#examSheetUrlInput'),
+  examSheetUrlSave: $('#examSheetUrlSave'),
+  examSheetUrlStatus: $('#examSheetUrlStatus'),
+  syncUrlInput: $('#syncUrlInput'),
+  syncUrlSave: $('#syncUrlSave'),
+  syncUrlStatus: $('#syncUrlStatus'),
+  syncSheetUrlInput: $('#syncSheetUrlInput'),
+  csvFileInput: $('#csvFileInput'),
+  csvFileLoadSample: $('#csvFileLoadSample'),
+  exportBackupBtn: $('#exportBackupBtn'),
+  importBackupBtn: $('#importBackupBtn'),
+  importBackupInput: $('#importBackupInput'),
+  backupStatus: $('#backupStatus'),
+  resetDataBtn: $('#resetDataBtn'),
+
+  emptyGoSettings: $('#emptyGoSettings'),
+  emptyLoadSample: $('#emptyLoadSample'),
+  modeBasicBtn: $('#modeBasicBtn'),
+  modeExamBtn: $('#modeExamBtn'),
+
+  toast: $('#toast'),
+};
+
+// ---------------------------------------------------------------------------
+// 공통 유틸
+// ---------------------------------------------------------------------------
+export function toast(msg, kind = 'info') {
+  el.toast.textContent = msg;
+  el.toast.className = `toast show ${kind}`;
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { el.toast.className = 'toast'; }, 2600);
+}
+
+/** 상단 상태 점. detail에 출처(ok) 또는 실패 사유(err)를 넘기면 마우스를 올렸을 때 보인다. */
+export function setSyncStatus(state, detail = '') {
+  el.syncStatus.className = `sync-status ${state}`;
+  const d = new Date();
+  const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const base = state === 'ok' ? '데이터 연결됨' : state === 'err' ? '데이터 로딩 실패' : state === 'loading' ? '데이터 불러오는 중' : '데이터 없음';
+  const extra = state === 'ok' ? [detail, `${time} 로딩`] : state === 'err' ? [detail, `${time} 시도`] : [detail];
+  el.syncStatus.title = [base, ...extra].filter(Boolean).join(' · ');
+}
+
+export function applyTheme(dark) {
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  el.darkToggle.innerHTML = icon(dark ? 'sun' : 'moon');
+  el.darkToggleSettings.checked = dark;
+}
+
+export function applyFont(font) {
+  const value = font || 'default';
+  document.documentElement.dataset.font = value;
+  el.fontSelect.value = value;
+}
+
+export function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** 정답처럼 HTML 그대로 출력하는 값을 정화한다 (표/수식/br 등은 유지, 스크립트는 제거). */
+export function sanitizeHtml(html) {
+  const value = String(html ?? '');
+  if (window.DOMPurify) return window.DOMPurify.sanitize(value);
+  return escapeHtml(value);
+}
+
+// 정적 HTML의 아이콘 자리표시자를 SVG로 바꾼다 (다크모드 버튼은 applyTheme가 다시 그린다).
+hydrateIcons();
