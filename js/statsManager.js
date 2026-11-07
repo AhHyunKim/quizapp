@@ -37,6 +37,10 @@ export default class StatsManager {
       .sort((a, b) => b.attempts - a.attempts);
   }
 
+  dailyLog() {
+    return this.storage.getDailyLog(this.mode);
+  }
+
   rounds(scope) {
     return this.storage.getRoundScores(scope, this.mode);
   }

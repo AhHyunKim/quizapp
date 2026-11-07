@@ -582,3 +582,18 @@ h1 { font-family: var(--font-serif); font-size: 32px; line-height: 1.25; margin:
   .quiz-options-panel .shortcut-table { display: none; }
   .quiz-toolbar { gap: 8px; }
 }
+
+/* ===== 통계 시각화 (CSS/SVG만 사용) ===== */
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
+.chart-note { margin: 10px 0 0; font-size: 13.5px; color: var(--ink-muted); }
+.heatmap-svg { display: block; width: 100%; max-width: 420px; height: auto; }
+.hm { fill: var(--border); }
+.hm-1 { fill: var(--accent); fill-opacity: 0.28; }
+.hm-2 { fill: var(--accent); fill-opacity: 0.5; }
+.hm-3 { fill: var(--accent); fill-opacity: 0.75; }
+.hm-4 { fill: var(--accent); }
+.line-svg { display: block; width: 100%; height: auto; max-height: 240px; }
+.ch-grid { stroke: var(--border); stroke-width: 1; }
+.ch-axis { fill: var(--ink-muted); font-size: 12px; font-family: var(--font-mono); }
+.ch-line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.ch-dot { fill: var(--surface); stroke: var(--accent); stroke-width: 2.5; }

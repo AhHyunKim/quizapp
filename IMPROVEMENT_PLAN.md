@@ -226,7 +226,7 @@ Phase 1 → 3.1 → 3.2
 - [x] 2.6 모의고사 모드 (선택)
 - [x] 3.1 app.js 분리
 - [x] 3.2 퀴즈 UI 재디자인
-- [ ] 3.3 통계 시각화
+- [x] 3.3 통계 시각화
 - [ ] 4.1 백업 / 복원
 - [ ] 4.2 로딩 / 에러 상태
 - [ ] 4.3 PWA
@@ -239,5 +239,5 @@ Phase 1 → 3.1 → 3.2
 - **[버그, 미수정] `clearAllUserData()`가 모드 접미사 키를 지우지 않음** (`js/storageManager.js`): `KEYS` 값(접미사 없는 키)만 `removeItem` 하므로, 실제 저장 키인 `qa_*_v1_basic` / `qa_*_v1_exam`은 "학습기록 전체 삭제"로 지워지지 않는다. (발견: Task 2.3)
 - **[주의] Apps Script 쪽 미반영**: Task 2.3에서 동기화 `answer` 페이로드에 `streak`, `graduated`를 추가했다. 사용자가 배포한 Apps Script(저장소에 없음)가 이 필드를 저장·반영하지 않으면, 시트에서 pull 할 때 `streak`가 0으로 돌아가고 시트 쪽 오답 플래그는 "정답이면 즉시 해제" 규칙으로 남을 수 있다. 필요하면 Apps Script에서 `graduated`일 때만 `wrong`을 해제하도록 수정. (발견: Task 2.3)
 - **[참고]** `lastAt`(마지막 풀이 시각)은 `recordAnswer()`에 이미 기록되고 있었다. Task 2.4에서는 추가 기록 불필요.
-- **[버그, 미수정] 통계 화면이 열리지 않음**: `renderStats()`가 `statTile()`을 호출하지만 이 함수는 저장소 전체 이력에 정의된 적이 없다 → `통계` 클릭 시 `ReferenceError: statTile is not defined`. 최초 업로드 커밋(84aef96)부터 있던 문제로 보임. `.stat-tile` / `.num` / `.label` CSS는 존재하므로 `<div class="stat-tile"><div class="num">값</div><div class="label">라벨</div></div>`를 반환하는 함수 추가가 필요. Task 3.3(통계 시각화)에서 함께 처리 예정. (발견: Task 2.4 검증 중, 2.6에서 재확인)
+- **[버그, 미수정] 통계 화면이 열리지 않음**: `renderStats()`가 `statTile()`을 호출하지만 이 함수는 저장소 전체 이력에 정의된 적이 없다 → `통계` 클릭 시 `ReferenceError: statTile is not defined`. 최초 업로드 커밋(84aef96)부터 있던 문제로 보임. `.stat-tile` / `.num` / `.label` CSS는 존재하므로 `<div class="stat-tile"><div class="num">값</div><div class="label">라벨</div></div>`를 반환하는 함수 추가가 필요. Task 3.3에서 `statTile()`을 추가해 해결함. (발견: Task 2.4 검증 중, 2.6에서 재확인)
 - **[참고] 모의고사(2.6)**: 한 화면 스크롤 방식, 경과 시간은 카운트업(제한 시간 없음), 같은 보기를 다시 누르면 선택 해제, 미응답은 오답 처리. 진행 중 상태는 sessionStorage `qa_mock_session`.

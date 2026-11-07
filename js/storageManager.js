@@ -11,6 +11,7 @@ const KEYS = {
   ROUND_SCORES: 'qa_round_scores_v1',
   SUBJECT_STATS: 'qa_subject_stats_v1',
   LAST_POSITION: 'qa_last_position_v1',
+  DAILY_LOG: 'qa_daily_log_v1', // { "YYYY-MM-DD": 그날 푼 문제 수 }
 };
 
 // 여기에 Apps Script 배포 URL(.../exec)을 채워두면, 설정 화면에서 아무것도 입력하지 않아도
@@ -265,9 +266,22 @@ export default class StorageManager {
       this._write(this._modeKey(KEYS.SUBJECT_STATS, mode), subStats);
     }
 
+    this._bumpDailyLog(mode);
+
     this._syncPush(mode, { type: 'answer', id, subject, subSubject, correct, streak: s.streak, graduated });
     return { ...s, graduated };
   }
+
+  // ---- 일별 풀이 수 (학습 잔디용) ----
+  _bumpDailyLog(mode = 'default') {
+    const log = this._read(this._modeKey(KEYS.DAILY_LOG, mode), {});
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    log[key] = (log[key] || 0) + 1;
+    this._write(this._modeKey(KEYS.DAILY_LOG, mode), log);
+  }
+  getDailyLog(mode = 'default') { return this._read(this._modeKey(KEYS.DAILY_LOG, mode), {}); }
 
   getQuestionStats(id, mode = 'default') {
     const stats = this._read(this._modeKey(KEYS.QUESTION_STATS, mode), {});

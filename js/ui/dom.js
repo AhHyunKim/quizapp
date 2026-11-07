@@ -41,6 +41,8 @@ export const el = {
   subjectStatsTable: $('#subjectStatsTable'),
   roundScopeSelect: $('#roundScopeSelect'),
   roundTable: $('#roundTable'),
+  roundChart: $('#roundChart'),
+  heatmap: $('#heatmap'),
 
   sheetUrlInput: $('#sheetUrlInput'),
   sheetUrlSave: $('#sheetUrlSave'),
