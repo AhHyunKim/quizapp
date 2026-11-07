@@ -229,7 +229,7 @@ Phase 1 → 3.1 → 3.2
 - [x] 3.3 통계 시각화
 - [x] 4.1 백업 / 복원
 - [x] 4.2 로딩 / 에러 상태
-- [ ] 4.3 PWA
+- [x] 4.3 PWA
 - [ ] 4.4 GitHub Pages 배포
 
 ## 발견 사항
@@ -242,3 +242,6 @@ Phase 1 → 3.1 → 3.2
 - **[버그, 미수정] 통계 화면이 열리지 않음**: `renderStats()`가 `statTile()`을 호출하지만 이 함수는 저장소 전체 이력에 정의된 적이 없다 → `통계` 클릭 시 `ReferenceError: statTile is not defined`. 최초 업로드 커밋(84aef96)부터 있던 문제로 보임. `.stat-tile` / `.num` / `.label` CSS는 존재하므로 `<div class="stat-tile"><div class="num">값</div><div class="label">라벨</div></div>`를 반환하는 함수 추가가 필요. Task 3.3에서 `statTile()`을 추가해 해결함. (발견: Task 2.4 검증 중, 2.6에서 재확인)
 - **[참고] 모의고사(2.6)**: 한 화면 스크롤 방식, 경과 시간은 카운트업(제한 시간 없음), 같은 보기를 다시 누르면 선택 해제, 미응답은 오답 처리. 진행 중 상태는 sessionStorage `qa_mock_session`.
 - **[결정] 4.1 가져오기 후 동기화는 실행하지 않음**: 현재 동기화는 풀이 이벤트 단위 push와 시트→기기 pull(덮어쓰기)뿐이라, 가져온 기록 뒤에 pull을 실행하면 방금 복원한 내용이 시트 내용으로 다시 덮인다. 일괄 push API가 생기면 그때 연결.
+- **[검증 한계] 4.3 PWA**: 내장 브라우저 pane에서는 서비스워커 등록이 "unknown error when fetching the script"로 실패해(서버 응답 200 정상) 실제 오프라인 동작은 확인하지 못했다. 대신 Node 모의 환경으로 sw.js 로직(앱 셸 cache-first, CSV network-first→오프라인 시 마지막 응답, Apps Script 동기화 요청 우회)을 검증했다. 일반 Chrome에서 `localhost:8000`에 한 번 접속 → 개발자도구 Application ▸ Service Workers 확인 → Network에서 Offline 체크 후 새로고침으로 최종 확인 필요.
+- **[주의] 서비스워커 캐시**: 앱 셸은 cache-first라서 `js/*`, `css/*`, `index.html`을 수정해 배포하면 `sw.js`의 `CACHE_VERSION`을 올려야 사용자에게 반영된다. 새 JS 파일을 추가하면 `SHELL_FILES`에도 넣어야 한다. 개발 중 오래된 화면이 보이면 개발자도구에서 Service Worker를 Unregister 하거나 시크릿 창을 쓴다.
+- **[참고] `img/`**: 작업 시작 전/중에 사용자가 둔 `img/favicon-32.png`, `img/favicon-180.png`는 untracked 상태로 두었다(index.html이 참조 중이므로 커밋 필요). 4.3에서 `img/icon-192.png`, `img/icon-512.png`만 추가 커밋했다.

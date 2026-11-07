@@ -85,3 +85,10 @@ el.modeExamBtn.addEventListener('click', async () => {
     navigate('empty');
   }
 })();
+
+// 서비스워커 등록 (localhost 또는 HTTPS에서만) — 한 번 접속하면 오프라인에서도 학습할 수 있다.
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((err) => console.warn('[sw] 등록 실패', err));
+  });
+}
