@@ -1210,6 +1210,28 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ---------------------------------------------------------------------------
+// 모바일 스와이프 (가로로 60px 넘게, 세로 이동보다 크게 움직이면 이전/다음)
+// ---------------------------------------------------------------------------
+let swipeStart = null;
+el.quizCardWrap.addEventListener('touchstart', (e) => {
+  const t = e.touches[0];
+  // 입력칸에서 시작한 터치(텍스트 선택/커서 이동)는 무시
+  swipeStart = e.touches.length === 1 && !e.target.closest('textarea, input')
+    ? { x: t.clientX, y: t.clientY }
+    : null;
+}, { passive: true });
+el.quizCardWrap.addEventListener('touchend', (e) => {
+  if (!swipeStart) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - swipeStart.x;
+  const dy = t.clientY - swipeStart.y;
+  swipeStart = null;
+  if (Math.abs(dx) <= 60 || Math.abs(dx) <= Math.abs(dy)) return;
+  const btn = dx < 0 ? el.nextBtn : el.prevBtn;
+  if (!btn.disabled) btn.click();
+}, { passive: true });
+
+// ---------------------------------------------------------------------------
 // 초기화
 // ---------------------------------------------------------------------------
 (async function init() {
