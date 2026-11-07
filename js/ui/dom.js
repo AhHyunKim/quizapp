@@ -80,9 +80,14 @@ export function toast(msg, kind = 'info') {
   toast._t = setTimeout(() => { el.toast.className = 'toast'; }, 2600);
 }
 
-export function setSyncStatus(state) {
+/** 상단 상태 점. detail에 출처(ok) 또는 실패 사유(err)를 넘기면 마우스를 올렸을 때 보인다. */
+export function setSyncStatus(state, detail = '') {
   el.syncStatus.className = `sync-status ${state}`;
-  el.syncStatus.title = state === 'ok' ? '데이터 연결됨' : state === 'err' ? '데이터 로딩 실패' : '데이터 없음';
+  const d = new Date();
+  const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const base = state === 'ok' ? '데이터 연결됨' : state === 'err' ? '데이터 로딩 실패' : state === 'loading' ? '데이터 불러오는 중' : '데이터 없음';
+  const extra = state === 'ok' ? [detail, `${time} 로딩`] : state === 'err' ? [detail, `${time} 시도`] : [detail];
+  el.syncStatus.title = [base, ...extra].filter(Boolean).join(' · ');
 }
 
 export function applyTheme(dark) {

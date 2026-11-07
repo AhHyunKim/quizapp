@@ -8,6 +8,28 @@ import { renderNavCounts } from './sidebarView.js';
 import { renderStats } from './statsView.js';
 import { navigate } from '../app.js';
 
+/** 문제를 불러오는 동안 카드 자리에 보여줄 스켈레톤 */
+export function showCardSkeleton() {
+  el.quizCardWrap.innerHTML = `
+    <div class="qcard qcard-skeleton" aria-busy="true" aria-label="문제를 불러오는 중">
+      <div class="sk-line sk-short"></div>
+      <div class="sk-line sk-tall"></div>
+      <div class="sk-line"></div>
+      <div class="sk-box"></div>
+    </div>`;
+}
+
+/** 불러오기에 실패했을 때 카드 자리에 원인과 다음 행동을 보여준다. */
+export function showLoadError(message) {
+  el.quizCardWrap.innerHTML = `
+    <div class="qcard qcard-empty">
+      <p class="load-error-title">문제를 불러오지 못했습니다</p>
+      <p class="load-error-msg">${escapeHtml(message || '알 수 없는 오류입니다.')}</p>
+      <button id="loadErrorSettings" class="btn btn-primary" type="button">설정에서 연결 확인</button>
+    </div>`;
+  $('#loadErrorSettings').addEventListener('click', () => navigate('settings'));
+}
+
 /** 채점 결과 후처리: 오답노트 졸업 시 토스트 */
 export function notifyGraduation(result) {
   if (result && result.graduated) toast('🎓 오답노트 졸업!', 'ok');

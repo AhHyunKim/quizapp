@@ -8,7 +8,7 @@ import { loadExamFromSheet, loadExamSample, loadFromSheet, loadSample } from './
 import { renderNavCounts, renderRoundTree } from './ui/sidebarView.js';
 import { renderStats } from './ui/statsView.js';
 import { stopMockTimer } from './ui/mockView.js';
-import './ui/quizView.js';
+import { showCardSkeleton } from './ui/quizView.js';
 import './ui/settingsView.js';
 
 // ---------------------------------------------------------------------------
@@ -78,6 +78,8 @@ el.modeExamBtn.addEventListener('click', async () => {
 
   if (basicSettings.sheetUrl) {
     setSyncStatus('loading');
+    navigate('quiz');
+    showCardSkeleton();
     await loadFromSheet(basicSettings.sheetUrl);
   } else {
     navigate('empty');

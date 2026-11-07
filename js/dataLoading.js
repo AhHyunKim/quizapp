@@ -4,12 +4,23 @@
 import { state, storage, dataLoader, menuBuilder } from './state.js';
 import QuizEngine from './quizEngine.js';
 import StatsManager from './statsManager.js';
-import { el, setSyncStatus, toast } from './ui/dom.js';
+import { $, el, setSyncStatus, toast } from './ui/dom.js';
 import { buildRoundMenu, convertExamRow, normalizeQuestions, parseOptionList } from './questionNormalizer.js';
 import { renderNavCounts, renderRoundTree, renderSubjectTree } from './ui/sidebarView.js';
-import { renderQuizCard, startSession } from './ui/quizView.js';
+import { renderQuizCard, showCardSkeleton, showLoadError, startSession } from './ui/quizView.js';
 import { resumeMockIfAny } from './ui/mockView.js';
 import { navigate } from './app.js';
+
+/** 퀴즈 화면이 보이는 중이면 카드 자리에 로딩 스켈레톤을 띄운다. */
+function beginLoadingUI() {
+  setSyncStatus('loading');
+  if ($('#view-quiz').classList.contains('active')) showCardSkeleton();
+}
+
+/** 실패하면 퀴즈 화면이 보이는 중일 때 카드 자리에 원인을 보여준다. */
+function failLoadingUI(err) {
+  if ($('#view-quiz').classList.contains('active')) showLoadError(err.message);
+}
 
 export async function applyLoadedQuestions(list, sourceLabel, mode = state.currentMode) {
   const normalized = normalizeQuestions(list);
@@ -23,7 +34,7 @@ export async function applyLoadedQuestions(list, sourceLabel, mode = state.curre
   renderSubjectTree();
   renderRoundTree();
   renderNavCounts();
-  setSyncStatus('ok');
+  setSyncStatus('ok', sourceLabel);
   toast(`${sourceLabel} · 문제 ${state.questions.length}개 로딩 완료`, 'ok');
   window.__debug_app_state = { mode, questionCount: state.questions.length, currentMode: state.currentMode, questions: state.questions };
 
@@ -55,6 +66,7 @@ export async function loadFromSheet(url) {
   el.modeExamBtn.classList.remove('active');
   el.sheetUrlStatus.textContent = '불러오는 중…';
   el.sheetUrlStatus.className = 'settings-status';
+  beginLoadingUI();
   try {
     const list = await dataLoader.loadFromGoogleSheets(url);
     if (list.length === 0) throw new Error('시트에서 문제를 찾지 못했습니다. 헤더(ID/과목/소과목/문제/정답)를 확인해 주세요.');
@@ -64,7 +76,8 @@ export async function loadFromSheet(url) {
     el.sheetUrlStatus.className = 'settings-status ok';
   } catch (err) {
     console.error(err);
-    setSyncStatus('err');
+    setSyncStatus('err', err.message);
+    failLoadingUI(err);
     el.sheetUrlStatus.textContent = err.message || '연결에 실패했습니다.';
     el.sheetUrlStatus.className = 'settings-status err';
     toast('Google Sheets 연결 실패', 'err');
@@ -77,6 +90,7 @@ export async function loadExamFromSheet(url) {
   el.modeBasicBtn.classList.remove('active');
   el.examSheetUrlStatus.textContent = '불러오는 중…';
   el.examSheetUrlStatus.className = 'settings-status';
+  beginLoadingUI();
   try {
     const list = await (url.includes('data/exam-sample.csv') ? dataLoader.loadFromCSVUrl(url) : dataLoader.loadFromGoogleSheets(url));
     if (list.length === 0) throw new Error('기출문제 시트에서 문제를 찾지 못했습니다.');
@@ -87,7 +101,8 @@ export async function loadExamFromSheet(url) {
     el.examSheetUrlStatus.className = 'settings-status ok';
   } catch (err) {
     console.error(err);
-    setSyncStatus('err');
+    setSyncStatus('err', err.message);
+    failLoadingUI(err);
     el.examSheetUrlStatus.textContent = err.message || '기출문제 연결에 실패했습니다.';
     el.examSheetUrlStatus.className = 'settings-status err';
     toast('기출문제 연결 실패', 'err');
@@ -165,6 +180,6 @@ export async function loadCSVFile(file) {
     await applyLoadedQuestions(list, file.name, state.currentMode);
   } catch (err) {
     console.error(err);
-    toast('CSV 파일을 읽지 못했습니다.', 'err');
+    toast(err.message || 'CSV 파일을 읽지 못했습니다.', 'err');
   }
 }
