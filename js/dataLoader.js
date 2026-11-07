@@ -12,6 +12,10 @@ const HEADER_ALIAS = {
   문제: 'question',
   정답: 'answer',
   회차: 'round',
+  해설: 'explanation',
+  Explanation: 'explanation',
+  난이도: 'difficulty',
+  Difficulty: 'difficulty',
 };
 
 /**

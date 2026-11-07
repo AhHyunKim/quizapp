@@ -313,6 +313,7 @@ function convertExamRow(row) {
     options: normalizedOptions,
     answer: normalizedAnswer,
     explanation: row.explanation || row.해설 || '',
+    difficulty: row.difficulty || row.난이도 || '',
     round: String(roundValue || '').trim(),
   };
 }
@@ -394,6 +395,7 @@ async function loadExamSample() {
         options: normalizedOptions,
         answer: normalizedAnswer,
         explanation: row.explanation || row.해설 || '',
+        difficulty: row.difficulty || row.난이도 || '',
         round: String(roundValue || '').trim(),
       };
     }).filter((q) => q.id && q.question);
@@ -678,6 +680,22 @@ function isAnswerMatch(draft, answer) {
   return d.length > 0 && d === norm(answer);
 }
 
+/** 해설 블록 (해설 컬럼이 없거나 비어 있으면 표시하지 않는다) */
+function explanationBlock(q) {
+  if (!q.explanation) return '';
+  return `
+        <div class="qcard-answer-wrap qcard-explain-wrap">
+          <div class="qcard-answer-label">해설</div>
+          <div class="qcard-answer-text">${sanitizeHtml(q.explanation)}</div>
+        </div>`;
+}
+
+/** 난이도 배지 (난이도 컬럼이 없거나 비어 있으면 표시하지 않는다) */
+function difficultyBadge(q) {
+  if (!q.difficulty) return '';
+  return `<span class="qcard-difficulty">${escapeHtml(q.difficulty)}</span>`;
+}
+
 function renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
   const studyMode = el.studyModeToggle.checked;
   const effectiveRevealed = revealed || studyMode;
@@ -688,6 +706,7 @@ function renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
     <div class="qcard">
       <div class="qcard-eyebrow">
         <span class="qcard-path">${qcardPathLabel(q)}${accuracy !== null ? ` · 누적 정답률 ${accuracy}%` : ''}</span>
+        ${difficultyBadge(q)}
         <span class="qcard-tools">
           <button class="qcard-icon-btn bookmark ${isBookmarked ? 'on' : ''}" id="bookmarkBtn" title="북마크">${isBookmarked ? '🏷️' : '🔖'}</button>
           <button class="qcard-icon-btn favorite ${isFavorite ? 'on' : ''}" id="favoriteBtn" title="즐겨찾기">${isFavorite ? '🌟' : '⭐'}</button>
@@ -707,6 +726,7 @@ function renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
           <div class="qcard-answer-label">정답${isMatch ? ' <span class="qcard-match-tag">✓ 내 답과 일치</span>' : ''}</div>
           <div class="qcard-answer-text">${sanitizeHtml(q.answer || '')}</div>
         </div>
+        ${explanationBlock(q)}
         ${!graded ? `
           <div class="grade-actions">
             <button class="grade-btn correct" id="gradeCorrect">맞았어요</button>
@@ -779,6 +799,7 @@ function renderMultipleChoiceQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
     <div class="qcard">
       <div class="qcard-eyebrow">
         <span class="qcard-path">${qcardPathLabel(q)}${accuracy !== null ? ` · 누적 정답률 ${accuracy}%` : ''}</span>
+        ${difficultyBadge(q)}
         <span class="qcard-tools">
           <button class="qcard-icon-btn bookmark ${isBookmarked ? 'on' : ''}" id="bookmarkBtn" title="북마크">${isBookmarked ? '🏷️' : '🔖'}</button>
           <button class="qcard-icon-btn favorite ${isFavorite ? 'on' : ''}" id="favoriteBtn" title="즐겨찾기">${isFavorite ? '🌟' : '⭐'}</button>
@@ -799,12 +820,7 @@ function renderMultipleChoiceQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
         </div>
       ` : ''}
 
-      ${showResult ? `
-        <div class="qcard-answer-wrap">
-          <div class="qcard-answer-label">해설</div>
-          <div class="qcard-answer-text">${sanitizeHtml(q.explanation || '')}</div>
-        </div>
-      ` : ''}
+      ${showResult ? explanationBlock(q) : ''}
 
       ${!showResult ? `
         <div class="qcard-actions">

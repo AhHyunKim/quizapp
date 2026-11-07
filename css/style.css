@@ -324,6 +324,8 @@ h1 { font-family: var(--font-serif); font-size: 32px; line-height: 1.25; margin:
   font-size: 14px; color: var(--accent-strong); font-weight: 700;
   background: var(--accent-tint); padding: 3px 12px; border-radius: 999px;
 }
+.qcard-difficulty { margin-right: auto; margin-left: 8px; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border-strong); color: var(--ink-muted); white-space: nowrap; }
+.qcard-explain-wrap { margin-top: 12px; }
 .qcard-tools { display: flex; gap: 2px; }
 .qcard-icon-btn {
   background: none; border: none; cursor: pointer; font-size: 19px; padding: 6px 8px;
