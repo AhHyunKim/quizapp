@@ -451,6 +451,7 @@ h1 { font-family: var(--font-serif); font-size: 32px; line-height: 1.25; margin:
 .settings-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
 .settings-row input[type="text"] { flex: 1; min-width: 220px; padding: 10px 13px; font-size: 15px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface-tint); color: var(--ink); }
 .settings-row input[type="text"]:focus { outline: 2px solid var(--accent); outline-offset: 0; background: var(--surface); }
+.settings-row input[type="number"] { width: 72px; padding: 8px 10px; font-size: 15px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface-tint); color: var(--ink); }
 .settings-status { font-size: 14px; margin-top: 8px; color: var(--ink-muted); }
 .settings-status.ok { color: var(--good); }
 .settings-status.err { color: var(--bad); }

@@ -33,6 +33,7 @@ const el = {
   darkToggle: $('#darkToggle'),
   darkToggleSettings: $('#darkToggleSettings'),
   fontSelect: $('#fontSelect'),
+  graduateStreakInput: $('#graduateStreakInput'),
   syncStatus: $('#syncStatus'),
   subjectTree: $('#subjectTree'),
   roundNavSection: $('#roundNavSection'),
@@ -102,6 +103,11 @@ function applyTheme(dark) {
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   el.darkToggle.textContent = dark ? '☀️' : '🌙';
   el.darkToggleSettings.checked = dark;
+}
+
+/** 채점 결과 후처리: 오답노트 졸업 시 토스트 */
+function notifyGraduation(result) {
+  if (result && result.graduated) toast('🎓 오답노트 졸업!', 'ok');
 }
 
 function applyFont(font) {
@@ -771,13 +777,13 @@ function renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
   const gradeCorrect = $('#gradeCorrect');
   const gradeWrong = $('#gradeWrong');
   if (gradeCorrect) gradeCorrect.addEventListener('click', () => {
-    quiz.submitResult(true, currentMode);
+    notifyGraduation(quiz.submitResult(true, currentMode));
     graded = true;
     renderNavCounts();
     goNext();
   });
   if (gradeWrong) gradeWrong.addEventListener('click', () => {
-    quiz.submitResult(false, currentMode);
+    notifyGraduation(quiz.submitResult(false, currentMode));
     graded = true;
     renderNavCounts();
     goNext();
@@ -856,7 +862,7 @@ function renderMultipleChoiceQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
       const selected = selectedOption;
       const answer = Number(q.answer || 0);
       const correct = selected === answer;
-      quiz.submitResult(correct, currentMode);
+      notifyGraduation(quiz.submitResult(correct, currentMode));
       revealed = true;
       graded = true;
       renderNavCounts();
@@ -1032,6 +1038,13 @@ el.fontSelect.addEventListener('change', (e) => {
   applyFont(e.target.value);
 });
 
+el.graduateStreakInput.addEventListener('change', (e) => {
+  const n = Math.min(5, Math.max(1, Math.floor(Number(e.target.value)) || 2));
+  e.target.value = n;
+  storage.setSettings({ graduateStreak: n }, 'basic');
+  storage.setSettings({ graduateStreak: n }, 'exam');
+});
+
 el.prevBtn.addEventListener('click', goPrev);
 el.nextBtn.addEventListener('click', goNext);
 el.modeBasicBtn.addEventListener('click', async () => {
@@ -1193,6 +1206,7 @@ document.addEventListener('keydown', (e) => {
   const examSettings = storage.getSettings('exam');
   applyTheme(!!basicSettings.darkMode || !!examSettings.darkMode);
   applyFont(basicSettings.font || examSettings.font || 'default');
+  el.graduateStreakInput.value = storage.getGraduateStreak('basic');
   el.sheetUrlInput.value = basicSettings.sheetUrl || '';
   el.examSheetUrlInput.value = examSettings.examSheetUrl || '';
   el.syncUrlInput.value = storage.getSyncUrl('basic') || storage.getSyncUrl('exam') || '';

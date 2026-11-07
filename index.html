@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>빈출문제 카드 — 문제풀이</title>
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png" />
+<link rel="apple-touch-icon" href="img/favicon-180.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -220,6 +222,11 @@
               <option value="d2coding">D2Coding (코딩 폰트)</option>
             </select>
           </div>
+          <div class="settings-row">
+            <label for="graduateStreakInput">오답노트 졸업 기준 (연속 정답 수)</label>
+            <input id="graduateStreakInput" type="number" min="1" max="5" step="1" value="2" />
+          </div>
+          <p class="settings-desc">오답노트에 있는 문제를 이 횟수만큼 연속으로 맞히면 오답노트에서 자동으로 빠집니다.</p>
         </div>
 
         <div class="settings-block danger">

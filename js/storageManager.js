@@ -48,6 +48,11 @@ export default class StorageManager {
   getSettings(mode = 'default') {
     return this._read(this._modeKey(KEYS.SETTINGS, mode), { darkMode: false, sheetUrl: '', font: 'default', syncUrl: '', syncSheetUrl: '' });
   }
+  /** 오답노트 졸업 기준: 오답노트에 있는 문제를 연속으로 몇 번 맞히면 제거할지 (1~5, 기본 2). */
+  getGraduateStreak(mode = 'default') {
+    const n = Number(this.getSettings(mode).graduateStreak);
+    return Number.isFinite(n) && n >= 1 ? Math.min(5, Math.floor(n)) : 2;
+  }
   setSettings(patch, mode = 'default') {
     const merged = { ...this.getSettings(mode), ...patch };
     this._write(this._modeKey(KEYS.SETTINGS, mode), merged);
@@ -162,6 +167,7 @@ export default class StorageManager {
         correct,
         lastResult: r.lastResult === '정답',
         lastAt: r.lastAt ? new Date(r.lastAt).getTime() : undefined,
+        streak: Number(r.streak) || 0,
       };
       if (r.wrong === 'O') wrong.push(r.id);
       if (r.bookmark === 'O') bookmarks.push(r.id);
@@ -230,15 +236,21 @@ export default class StorageManager {
     const s = stats[id] || { attempts: 0, correct: 0 };
     s.attempts += 1;
     if (correct) s.correct += 1;
+    // 연속 정답 수 (기존 기록에는 없으므로 0으로 간주)
+    s.streak = correct ? (s.streak || 0) + 1 : 0;
     s.lastResult = correct;
     s.lastAt = Date.now();
     stats[id] = s;
     this._write(this._modeKey(KEYS.QUESTION_STATS, mode), stats);
 
-    // 오답노트는 "마지막 결과가 오답인 문제" 목록으로 자동 유지
+    // 오답노트: 오답이면 추가, 연속 N회 정답이면 졸업(제거)
     let wrong = this._getList(KEYS.WRONG, mode);
+    let graduated = false;
     if (correct) {
-      wrong = wrong.filter((x) => x !== id);
+      if (wrong.includes(id) && s.streak >= this.getGraduateStreak(mode)) {
+        wrong = wrong.filter((x) => x !== id);
+        graduated = true;
+      }
     } else if (!wrong.includes(id)) {
       wrong.push(id);
     }
@@ -253,8 +265,8 @@ export default class StorageManager {
       this._write(this._modeKey(KEYS.SUBJECT_STATS, mode), subStats);
     }
 
-    this._syncPush(mode, { type: 'answer', id, subject, subSubject, correct });
-    return s;
+    this._syncPush(mode, { type: 'answer', id, subject, subSubject, correct, streak: s.streak, graduated });
+    return { ...s, graduated };
   }
 
   getQuestionStats(id, mode = 'default') {
