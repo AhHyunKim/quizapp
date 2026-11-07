@@ -230,7 +230,7 @@ Phase 1 → 3.1 → 3.2
 - [x] 4.1 백업 / 복원
 - [x] 4.2 로딩 / 에러 상태
 - [x] 4.3 PWA
-- [ ] 4.4 GitHub Pages 배포
+- [x] 4.4 GitHub Pages 배포 (건너뜀: 이미 Pages 연동되어 있어 워크플로 불필요, README 배포 절차만 추가)
 
 ## 발견 사항
 (작업 중 찾은 범위 밖 문제를 여기에 기록)
@@ -246,3 +246,4 @@ Phase 1 → 3.1 → 3.2
 - **[주의] 서비스워커 캐시**: 앱 셸은 cache-first라서 `js/*`, `css/*`, `index.html`을 수정해 배포하면 `sw.js`의 `CACHE_VERSION`을 올려야 사용자에게 반영된다. 새 JS 파일을 추가하면 `SHELL_FILES`에도 넣어야 한다. 개발 중 오래된 화면이 보이면 개발자도구에서 Service Worker를 Unregister 하거나 시크릿 창을 쓴다.
 - **[참고] `img/`**: 작업 시작 전/중에 사용자가 둔 `img/favicon-32.png`, `img/favicon-180.png`는 untracked 상태로 두었다(index.html이 참조 중이므로 커밋 필요). 4.3에서 `img/icon-192.png`, `img/icon-512.png`만 추가 커밋했다.
 - **[추가 작업] 사이드바 재구성 (계획 외, 사용자 요청)**: 메뉴를 `오늘 할 것(복습·오답노트) / 풀 범위(전체·과목) / 회차(기출 모드) / 저장한 것 / 통계·설정` 순서로 재배치. 과목 목록을 항상 펼쳐 보이게 하고 소과목만 쉐브론으로 접고 펼침, 회차의 모의고사는 줄 오른쪽 연필 아이콘으로 변경. 모바일 터치 영역 44px. `sw.js` CACHE_VERSION을 v2로 올림.
+- **[결정] 4.4**: 사용자가 이미 GitHub Pages를 연동해 둠(워크플로 파일 없음 → 브랜치 배포로 추정, 설정은 확인하지 못함). `.github/workflows/pages.yml`은 기존 설정과 충돌할 수 있어 만들지 않고 README에 배포 안내만 추가. 사이트에 반영하려면 `improvements`를 `main`에 합쳐야 하고, 합치기 전에 `img/favicon-32.png`, `img/favicon-180.png`도 커밋해야 한다(index.html이 참조 중).
