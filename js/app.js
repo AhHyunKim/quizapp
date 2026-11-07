@@ -7,6 +7,7 @@ import StorageManager from './storageManager.js';
 import MenuBuilder, { naturalCompare } from './menuBuilder.js';
 import QuizEngine from './quizEngine.js';
 import StatsManager from './statsManager.js';
+import { getDueIds } from './reviewScheduler.js';
 
 const storage = new StorageManager();
 const dataLoader = new DataLoader();
@@ -42,6 +43,7 @@ const el = {
   allLearningNavItem: $('#allLearningNavItem'),
   countWrong: $('#countWrong'),
   countBookmark: $('#countBookmark'),
+  countReview: $('#countReview'),
   countFavorite: $('#countFavorite'),
   wrongScopeTree: $('#wrongScopeTree'),
 
@@ -618,7 +620,13 @@ function renderWrongScopeMenu() {
   });
 }
 
+/** 복습 기한이 지난 문제 ID (현재 로딩된 문제에 있는 것만) */
+function getReviewIds() {
+  return getDueIds(storage.getAllQuestionStats(currentMode), Date.now()).filter((id) => byId.has(id));
+}
+
 function renderNavCounts() {
+  el.countReview.textContent = getReviewIds().length;
   el.countWrong.textContent = storage.getWrongList(currentMode).length;
   el.countBookmark.textContent = storage.getBookmarks(currentMode).length;
   el.countFavorite.textContent = storage.getFavorites(currentMode).length;
@@ -1002,6 +1010,9 @@ document.querySelectorAll('.nav-item[data-nav]').forEach((btn) => {
       beginLearning(getWrongIds(), { scope: '__wrong__', breadcrumb: '오답노트' });
       navigate('quiz');
       renderQuizCard();
+    } else if (view === 'review') {
+      beginLearning(getReviewIds(), { scope: '__review__', breadcrumb: '오늘의 복습' });
+      renderNavCounts();
     } else if (view === 'bookmark') {
       beginLearning(storage.getBookmarks(currentMode), { scope: '__bookmark__', breadcrumb: '북마크' });
     } else if (view === 'favorite') {
