@@ -21,6 +21,7 @@ let stats = null;
 let revealed = false;
 let graded = false;
 let myAnswerDraft = '';
+let selectedOption = 0; // 객관식에서 고른 보기 번호 (1부터, 0=선택 없음)
 let currentMode = 'basic';
 let currentModeLabel = '빈출문제';
 
@@ -619,13 +620,19 @@ function renderNavCounts() {
 // ---------------------------------------------------------------------------
 // 퀴즈(문제풀이)
 // ---------------------------------------------------------------------------
+/** 카드 화면 상태(정답 공개/채점/입력/선택)를 초기화한다. */
+function resetCardState() {
+  revealed = false;
+  graded = false;
+  myAnswerDraft = '';
+  selectedOption = 0;
+}
+
 function startSession(ids, { scope, breadcrumb }) {
   if (!quiz) return;
   quiz.start(ids, { shuffle: el.shuffleToggle.checked, scope });
   el.quizBreadcrumb.textContent = `${breadcrumb} (${ids.length}문제)`;
-  revealed = false;
-  graded = false;
-  myAnswerDraft = '';
+  resetCardState();
 }
 
 function beginLearning(ids, { scope, breadcrumb }) {
@@ -650,9 +657,7 @@ function goToQuestionId(rawId) {
   if (idx < 0) return;
 
   quiz.index = idx;
-  revealed = false;
-  graded = false;
-  myAnswerDraft = '';
+  resetCardState();
   navigate('quiz');
   renderQuizCard();
 }
@@ -764,7 +769,7 @@ function renderMultipleChoiceQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
     ? q.options.filter((opt) => opt !== undefined && opt !== null && opt !== '').map((opt) => String(opt).trim())
     : [];
   const visibleOptions = options.slice(0, 4);
-  const selectedIndex = Number(q.selectedIndex ?? -1);
+  const selectedIndex = selectedOption || -1;
   const answerIndex = Number(q.answer || 0);
   const showResult = graded || revealed;
   const hasOptions = visibleOptions.length >= 4;
@@ -797,7 +802,7 @@ function renderMultipleChoiceQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
       ${showResult ? `
         <div class="qcard-answer-wrap">
           <div class="qcard-answer-label">해설</div>
-          <div class="qcard-answer-text">${q.explanation || ''}</div>
+          <div class="qcard-answer-text">${sanitizeHtml(q.explanation || '')}</div>
         </div>
       ` : ''}
 
@@ -824,7 +829,7 @@ function renderMultipleChoiceQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
   document.querySelectorAll('.option-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       if (showResult) return;
-      q.selectedIndex = Number(btn.dataset.option || 0);
+      selectedOption = Number(btn.dataset.option || 0);
       renderQuizCard();
     });
   });
@@ -832,7 +837,7 @@ function renderMultipleChoiceQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
   const confirmBtn = $('#confirmBtn');
   if (confirmBtn) {
     confirmBtn.addEventListener('click', () => {
-      const selected = Number(q.selectedIndex || 0);
+      const selected = selectedOption;
       const answer = Number(q.answer || 0);
       const correct = selected === answer;
       quiz.submitResult(correct, currentMode);
@@ -881,10 +886,10 @@ function renderQuizCard() {
 }
 
 function goNext() {
-  if (quiz.hasNext()) { quiz.next(); revealed = false; graded = false; myAnswerDraft = ''; renderQuizCard(); }
+  if (quiz.hasNext()) { quiz.next(); resetCardState(); renderQuizCard(); }
 }
 function goPrev() {
-  if (quiz.hasPrev()) { quiz.prev(); revealed = false; graded = false; myAnswerDraft = ''; renderQuizCard(); }
+  if (quiz.hasPrev()) { quiz.prev(); resetCardState(); renderQuizCard(); }
 }
 
 function qcardPathLabel(q) {
@@ -1050,7 +1055,7 @@ el.shuffleToggle.addEventListener('change', () => {
       const idx = quiz.queue.indexOf(currentId);
       if (idx >= 0) quiz.index = idx;
     }
-    revealed = false; graded = false;
+    resetCardState();
     renderQuizCard();
   }
 });
@@ -1117,7 +1122,7 @@ el.resetDataBtn.addEventListener('click', () => {
   storage.clearAllUserData();
   renderNavCounts();
   toast('학습기록을 초기화했습니다.', 'ok');
-  if (quiz) { revealed = false; graded = false; renderQuizCard(); }
+  if (quiz) { resetCardState(); renderQuizCard(); }
   renderStats();
 });
 
