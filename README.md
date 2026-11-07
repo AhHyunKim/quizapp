@@ -15,7 +15,8 @@ js/menuBuilder.js     과목/소과목 → 메뉴 트리 생성
 js/quizEngine.js      문제풀이 세션(순서/진행/채점) 관리
 js/statsManager.js    저장된 데이터를 통계용으로 집계
 js/app.js             위 모듈들을 화면(DOM)에 연결하는 컨트롤러
-data/sample.csv       테스트용 샘플 문제 (업로드해 주신 파일)
+data/sample.csv       테스트용 샘플 문제 (빈출문제 모드)
+data/exam-sample.csv  테스트용 샘플 문제 (기출문제 모드, 보기 4개 이상)
 ```
 
 기능별로 파일이 분리되어 있어, 예를 들어 "정답 채점 방식"을 바꾸고 싶으면 `quizEngine.js`만,
