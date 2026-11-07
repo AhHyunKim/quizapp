@@ -700,7 +700,7 @@ function renderShortAnswerQuiz(q, qs, accuracy, isBookmarked, isFavorite) {
       ${effectiveRevealed ? `
         <div class="qcard-answer-wrap">
           <div class="qcard-answer-label">정답${isMatch ? ' <span class="qcard-match-tag">✓ 내 답과 일치</span>' : ''}</div>
-          <div class="qcard-answer-text">${q.answer || ''}</div>
+          <div class="qcard-answer-text">${sanitizeHtml(q.answer || '')}</div>
         </div>
         ${!graded ? `
           <div class="grade-actions">
@@ -896,7 +896,16 @@ function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** 정답처럼 HTML 그대로 출력하는 값을 정화한다 (표/수식/br 등은 유지, 스크립트는 제거). */
+function sanitizeHtml(html) {
+  const value = String(html ?? '');
+  if (window.DOMPurify) return window.DOMPurify.sanitize(value);
+  return escapeHtml(value);
 }
 
 // ---------------------------------------------------------------------------
